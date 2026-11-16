@@ -82,7 +82,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
   font-family:var(--hand);font-size:calc(12.5px*var(--hs));margin-bottom:1px;border-radius:4px;padding:0 2px}
 .it .tx{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .it .dot{width:7px;height:7px;border-radius:50%;flex:none}
-.it.all{color:#fff;padding:0 5px}
+.it.all{padding:0 5px}
 .it.timed:hover,.it.todo:hover{background:rgba(127,127,127,.15)}
 .it .ck{flex:none;cursor:pointer;font-family:-apple-system,sans-serif;font-size:13px;line-height:1}
 .it.todo.done .tx{text-decoration:line-through;opacity:.5}
@@ -112,6 +112,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 .ev .bar{width:4px;align-self:stretch;border-radius:2px;flex:none;min-height:16px}
 .ev .tm{color:var(--sub);font-size:12px;min-width:46px;flex:none;padding-top:2px}
 .ev .tt{flex:1;word-break:break-word;font-family:var(--hand);font-size:calc(14px*var(--hs))}
+.enote{font-family:-apple-system,sans-serif;font-size:12.5px;color:var(--sub);white-space:pre-wrap;margin-top:1px}
 .todo{display:flex;align-items:flex-start;gap:6px;padding:2px 4px}
 .todo input[type=checkbox]{margin:4px 0 0;width:16px;height:16px;accent-color:var(--acc);flex:none}
 .todo .cd{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--sub);padding:0;margin-top:6px;flex:none;background:transparent}
@@ -162,6 +163,8 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 
 /* mobile */
 @media (max-width:980px){
+  input,select,textarea{font-size:16px !important}
+  .todo .tx,.ev .tt{font-size:calc(16px*var(--hs))}
   .app{height:auto;min-height:100vh}
   main{grid-template-columns:1fr;display:flex;flex-direction:column}
   .grid{grid-template-rows:repeat(6,88px)}
@@ -171,6 +174,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
   body{overflow:auto}
 }
 @media (max-width:700px){
+  .tcount{display:none}
   .grid{grid-template-rows:repeat(6,66px)}
 }
 </style>
@@ -319,11 +323,12 @@ var FALLBACK='#1a73e8';
 var DOW=['일','월','화','수','목','금','토'];
 var WD=['SU','MO','TU','WE','TH','FR','SA'];
 var DEFAULT_CATS=[
-  {id:'c-work',name:'회사일',color:'#1a73e8',o:1,u:1},
-  {id:'c-personal',name:'개인일',color:'#188038',o:2,u:1},
+  {id:'c-work',name:'회사',color:'#f9ab00',o:1,u:1},
+  {id:'c-personal',name:'koji',color:'#f57c00',o:2,u:1},
   {id:'c-event',name:'경조사',color:'#d93025',o:3,u:1},
-  {id:'c-etc',name:'기타',color:'#e37400',o:4,u:1}
+  {id:'c-etc',name:'기타',color:'#7cb342',o:4,u:1}
 ];
+var OLD_NAMES={'c-work':'회사일','c-personal':'개인일','c-event':'경조사','c-etc':'기타'};
 var FONTS=[
   {k:'gaegu',n:'개구 (손글씨)',f:"'Gaegu','Nanum Pen Script','Apple SD Gothic Neo',cursive",s:1.12},
   {k:'pen',n:'나눔 펜 (필기체)',f:"'Nanum Pen Script','Gaegu',cursive",s:1.4},
@@ -342,7 +347,7 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 
 /* ---------- state ---------- */
 var S={events:[],todos:{},tomb:{},cats:[],memos:[]};   // tomb: 삭제한 항목 id -> 삭제 시각 (동기화 때 부활 방지)
-var storageOK=true;
+var storageOK=true,migrated=false;
 function load(){
   try{
     var r=localStorage.getItem(KEY);
@@ -351,6 +356,12 @@ function load(){
   if(!S.cats.length)S.cats=JSON.parse(JSON.stringify(DEFAULT_CATS));
   S.events.forEach(function(e){if(!e.u)e.u=1});
   S.cats.forEach(function(c){if(!c.u)c.u=1});
+  // 기본 카테고리 이름·색 변경(이름을 직접 안 바꾼 것만 한 번 적용)
+  DEFAULT_CATS.forEach(function(d){
+    S.cats.forEach(function(c){
+      if(c.id===d.id&&c.name===OLD_NAMES[d.id]&&(c.name!==d.name||c.color!==d.color)){c.name=d.name;c.color=d.color;c.u=Date.now();migrated=true}
+    });
+  });
   S.memos.forEach(function(m){if(!m.u)m.u=1});
   for(var d in S.todos)S.todos[d].forEach(function(t){if(!t.u)t.u=1});
 }
@@ -397,6 +408,11 @@ function toast(msg){var t=$('#toast');t.textContent=msg;t.classList.add('show');
 /* ---------- categories ---------- */
 function catOf(id){for(var i=0;i<S.cats.length;i++)if(S.cats[i].id===id)return S.cats[i];return null}
 function catColor(id,fallback){var c=id?catOf(id):null;return c?c.color:(fallback||'#9aa0a6')}
+function inkOn(hex){
+  var m=/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex||'');if(!m)return '#fff';
+  var l=(0.299*parseInt(m[1],16)+0.587*parseInt(m[2],16)+0.114*parseInt(m[3],16));
+  return l>160?'#1f2328':'#fff';
+}
 function evColor(e){return catColor(e.cat,e.color||FALLBACK)}
 function todoColor(t){return catColor(t.c,'#9aa0a6')}
 function catSelect(cls,value,noneLabel){
@@ -426,7 +442,7 @@ function toggleTodo(t){t.d=!t.d;t.u=Date.now();touch();renderAll()}
 function evNode(e,d){
   var c=evColor(e),el;
   if(e.allDay){
-    el=h('div',{class:'it all',style:'background:'+c},h('span',{class:'tx'},e.title));
+    el=h('div',{class:'it all',style:'background:'+c+';color:'+inkOn(c)},h('span',{class:'tx'},e.title));
   }else{
     el=h('div',{class:'it timed'},
       h('span',{class:'dot',style:'background:'+c}),
@@ -485,7 +501,14 @@ function renderMonth(){
 }
 
 /* ---------- render: week ---------- */
+function isNarrow(){return window.innerWidth<=980}
 function renderWeek(){
+  if(isNarrow()){
+    var dt0=parse(sel),box0=$('#wlist');box0.textContent='';
+    $('#weekTitle').textContent=(dt0.getMonth()+1)+'월 '+dt0.getDate()+'일 ('+DOW[dt0.getDay()]+')';
+    box0.appendChild(dayCard(sel,dt0,todayS(),true));
+    return;
+  }
   var ws=weekStart(sel),we=addDays(ws,6);
   var a=parse(ws),b=parse(we);
   $('#weekTitle').textContent=(a.getMonth()+1)+'월 '+a.getDate()+'일 – '+(a.getMonth()===b.getMonth()?'':(b.getMonth()+1)+'월 ')+b.getDate()+'일';
@@ -496,7 +519,7 @@ function renderWeek(){
     box.appendChild(dayCard(d,dt,td));
   }
 }
-function dayCard(d,dt,td){
+function dayCard(d,dt,td,detail){
   var dow=dt.getDay();
   var card=h('div',{class:'day'+(d===td?' today':'')+(d===sel?' sel':''),'data-d':d});
   card.appendChild(h('div',{class:'dh'},
@@ -511,7 +534,8 @@ function dayCard(d,dt,td){
     card.appendChild(h('div',{class:'ev',onclick:function(){openEv(e.id)}},
       h('span',{class:'bar',style:'background:'+evColor(e)}),
       h('span',{class:'tm'},timeLabel(e,d)),
-      h('span',{class:'tt'},e.title)));
+      h('span',{class:'tt'},e.title,
+        detail&&e.note?h('div',{class:'enote'},e.note):null)));
   });
 
   var tl=S.todos[d]||[];
@@ -996,8 +1020,8 @@ function bind(){
   $('#todayBtn').onclick=function(){selectDay(todayS())};
   $('#prevM').onclick=function(){view.m--;if(view.m<0){view.m=11;view.y--}renderMonth()};
   $('#nextM').onclick=function(){view.m++;if(view.m>11){view.m=0;view.y++}renderMonth()};
-  $('#prevW').onclick=function(){selectDay(addDays(sel,-7))};
-  $('#nextW').onclick=function(){selectDay(addDays(sel,7))};
+  $('#prevW').onclick=function(){selectDay(addDays(sel,isNarrow()?-1:-7))};
+  $('#nextW').onclick=function(){selectDay(addDays(sel,isNarrow()?1:7))};
   $('#addEvBtn').onclick=function(){openEv(null,sel)};
   $('#evSave').onclick=saveEv;$('#evCancel').onclick=closeEv;$('#evDel').onclick=delEv;
   $('#evAll').onchange=syncAll;
@@ -1104,7 +1128,7 @@ function bind(){
   window.addEventListener('online',function(){scheduleSync(200)});
   setInterval(function(){if(!document.hidden)scheduleSync(0)},30000);
 
-  var rz;window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(renderMonth,120)});
+  var rz;window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(function(){renderMonth();renderWeek()},120)});
   var lastDay=todayS();
   document.addEventListener('visibilitychange',function(){
     if(!document.hidden&&todayS()!==lastDay){lastDay=todayS();selectDay(lastDay)}
@@ -1114,6 +1138,7 @@ function bind(){
 
 load();loadCfg();applyFont();bind();renderAll();
 setStatus(cfgOK()?'busy':'off');
+if(migrated)touch();
 if(cfgOK())scheduleSync(100);
 if(!storageOK)toast('이 환경에서는 저장이 안 돼요. 새로고침하면 사라집니다.');
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
