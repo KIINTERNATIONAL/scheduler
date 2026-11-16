@@ -20,11 +20,12 @@
   --bg:#f6f7f9; --card:#fff; --ink:#1f2328; --sub:#6b7280; --line:#e5e7eb;
   --acc:#1a73e8; --acc-soft:#e8f0fe; --today:#1a73e8; --hover:#f1f3f4; --danger:#d93025;
   --sat:#1a73e8; --sun:#d93025;
+  --paper:#fbf6ea; --paperline:rgba(120,90,40,.17);
   --hand:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif; --hs:1;
 }
 @media (prefers-color-scheme:dark){
   :root{ --bg:#111317; --card:#1b1e24; --ink:#e8eaed; --sub:#9aa0a6; --line:#2d3139;
-    --acc:#8ab4f8; --acc-soft:#26334d; --today:#8ab4f8; --hover:#262a31; --danger:#f28b82; --sat:#8ab4f8; --sun:#f28b82; }
+    --acc:#8ab4f8; --acc-soft:#26334d; --today:#8ab4f8; --hover:#262a31; --danger:#f28b82; --sat:#8ab4f8; --sun:#f28b82; --paper:#25221c; --paperline:rgba(255,255,255,.10); }
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
@@ -96,16 +97,37 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 /* diary */
 .stk{position:absolute;right:3px;bottom:1px;font-size:14px;line-height:1;cursor:pointer;z-index:2}
 .cell.hasd .items{margin-bottom:15px}
-.dnav{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.dnav b{flex:1;text-align:center;font-size:15px}
 .stks{display:flex;flex-wrap:wrap;gap:6px}
-.stks button{font-size:20px;line-height:1;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:4px 6px}
+.stks button{font-size:20px;line-height:1;border:1px solid var(--paperline);border-radius:10px;background:transparent;padding:4px 6px}
 .stks button.on{border-color:var(--acc);background:var(--acc-soft)}
-#dTxt{min-height:170px;line-height:1.6}
-.dph{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.page{position:fixed;inset:0;background:var(--paper);z-index:50;overflow:auto;display:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+.page.open{display:block}
+.pg{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:0 14px}
+.pg section{display:flex;flex-direction:column;flex:1}
+.pg section[hidden]{display:none}
+.pbar{display:flex;align-items:center;gap:8px;padding:12px 0}
+.pbar b{flex:1;text-align:center;font-size:15px}
+.plbl{font-size:12px;color:var(--sub);margin:6px 0 6px}
+.lined{background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--paperline) 31px,var(--paperline) 32px);background-attachment:local;line-height:32px;border-left:2px solid rgba(214,120,120,.45);padding:0 10px}
+#dTxt{display:block;width:100%;border:0;border-radius:0;background-color:transparent;color:var(--ink);font:inherit;font-size:15px;line-height:32px;resize:none;min-height:256px;outline:none;margin-top:8px}
+.dph{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:14px}
 .dph .p{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--hover);display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:11px}
 .dph img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
 .dph .p button{position:absolute;top:3px;right:3px;width:22px;height:22px;border:0;border-radius:11px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:1;padding:0}
+.pfoot{position:sticky;bottom:0;display:flex;gap:8px;align-items:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--paper);margin-top:auto}
+.pfoot .sp{flex:1}
+.car{position:relative;border-radius:12px;overflow:hidden;background:var(--hover)}
+.cars{display:flex;align-items:flex-start;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.cars::-webkit-scrollbar{display:none}
+.cars>*{flex:0 0 100%;aspect-ratio:1;scroll-snap-align:center;object-fit:cover;display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:12px}
+.cars img{cursor:pointer;display:block;width:100%;min-width:100%;max-width:100%;height:auto;aspect-ratio:1;object-fit:cover}
+.cnt{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;border-radius:10px;font-size:11px;padding:1px 8px}
+.vmeta{display:flex;align-items:center;gap:8px;margin:14px 2px 8px;color:var(--sub);font-size:13px}
+.vmeta .big{font-size:26px;line-height:1}
+.vnote{white-space:pre-wrap;word-break:break-word;font-size:15px;min-height:96px}
+.vact{display:flex;gap:8px;justify-content:flex-end;margin:16px 0 28px}
+.vempty{text-align:center;color:var(--sub);padding:80px 0}
+.vempty .btn{margin-top:14px}
 #imgOv{background:rgba(0,0,0,.85)}
 #bigImg{max-width:100%;max-height:92vh;border-radius:8px}
 
@@ -295,22 +317,35 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
   </div>
 </div>
 
-<!-- diary modal -->
-<div class="ov" id="diaryOv">
-  <div class="modal" style="max-width:520px">
-    <div class="dnav"><button class="btn icon" id="dPrev" aria-label="전날">‹</button><b id="dTitle"></b><button class="btn icon" id="dNext" aria-label="다음날">›</button></div>
-    <label>스티커 (달력 칸에 표시돼요)</label>
-    <div class="stks" id="dStk"></div>
-    <label>기록</label>
-    <textarea id="dTxt" placeholder="오늘 하루는 어땠나요?"></textarea>
-    <div class="dph" id="dPh"></div>
-    <div class="mfoot">
-      <button class="btn" id="dAdd">📷 사진 추가</button>
-      <input type="file" id="dFile" accept="image/*" multiple hidden>
-      <div class="sp"></div>
-      <button class="btn primary" id="dClose">닫기</button>
-    </div>
-    <div class="note" style="margin-top:8px">글은 쓰는 대로 자동 저장돼요. 사진은 줄여서 저장소에 올려 폰·PC에서 같이 보여요.</div>
+<!-- diary page -->
+<div class="page" id="diaryOv">
+  <div class="pg">
+    <section id="dView">
+      <div class="pbar">
+        <button class="btn icon" id="vPrev" aria-label="전날">‹</button>
+        <b id="vTitle"></b>
+        <button class="btn icon" id="vNext" aria-label="다음날">›</button>
+        <button class="btn icon" id="vClose" aria-label="닫기">✕</button>
+      </div>
+      <div id="vBody"></div>
+    </section>
+    <section id="dEdit" hidden>
+      <div class="pbar">
+        <button class="btn" id="eBack">‹ 뒤로</button>
+        <b id="eTitle"></b>
+        <span style="width:62px"></span>
+      </div>
+      <div class="plbl">오늘의 스티커 (달력 칸에 표시돼요)</div>
+      <div class="stks" id="dStk"></div>
+      <textarea id="dTxt" class="lined" placeholder="오늘 하루는 어땠나요?"></textarea>
+      <div class="dph" id="dPh"></div>
+      <div class="pfoot">
+        <button class="btn" id="dAdd">📷 사진 추가</button>
+        <input type="file" id="dFile" accept="image/*" multiple hidden>
+        <div class="sp"></div>
+        <button class="btn primary" id="dDone">업로드</button>
+      </div>
+    </section>
   </div>
 </div>
 <div class="ov" id="imgOv"><img id="bigImg" alt=""></div>
@@ -800,13 +835,50 @@ function shrink(file){
     img.src=url;
   });
 }
-var dDate=todayS(),dTimer=null,dUrls=[];
+var dDate=todayS(),dTimer=null,dUrls=[],dMode='view';
 function flushDiary(){
   if(dTimer){clearTimeout(dTimer);dTimer=null;
     var e=dEntry(dDate),v=$('#dTxt').value;
     if((e?e.t||'':'')!==v)diarySet(dDate,{t:v});
   }
 }
+function revokeUrls(){dUrls.forEach(function(u){URL.revokeObjectURL(u)});dUrls=[]}
+function dateLabel(d){var dt=parse(d);return (dt.getMonth()+1)+'월 '+dt.getDate()+'일 ('+DOW[dt.getDay()]+')'+(d===todayS()?' · 오늘':'')}
+function openBig(url){$('#bigImg').src=url;$('#imgOv').classList.add('open')}
+/* 보기 화면: 사진 위, 글 아래 */
+function renderView(){
+  revokeUrls();
+  var e=dEntry(dDate),dt=parse(dDate),body=$('#vBody');body.textContent='';
+  $('#vTitle').textContent=dateLabel(dDate);
+  if(!e){
+    body.appendChild(h('div',{class:'vempty'},'이 날은 아직 기록이 없어요',h('br'),
+      h('button',{class:'btn primary',onclick:showEdit},'✏️ 쓰기')));
+    return;
+  }
+  var ph=e.photos||[];
+  if(ph.length){
+    var cars=h('div',{class:'cars'}),cnt=h('span',{class:'cnt'},'1/'+ph.length);
+    ph.forEach(function(id){
+      var slot=h('div',{},'사진을 불러오는 중…');cars.appendChild(slot);
+      pGet(id).then(function(v){
+        if(!v||!v.b)return;
+        var url=URL.createObjectURL(v.b);dUrls.push(url);
+        var img=h('img',{src:url,alt:''});
+        img.addEventListener('click',function(){openBig(url)});
+        slot.replaceWith(img);
+      });
+    });
+    cars.addEventListener('scroll',function(){cnt.textContent=(Math.round(cars.scrollLeft/Math.max(1,cars.clientWidth))+1)+'/'+ph.length});
+    var car=h('div',{class:'car'},cars);
+    if(ph.length>1)car.appendChild(cnt);
+    body.appendChild(car);
+  }
+  body.appendChild(h('div',{class:'vmeta'},h('span',{class:'big'},e.s||'📖'),
+    h('span',{},dt.getFullYear()+'년 '+(dt.getMonth()+1)+'월 '+dt.getDate()+'일 ('+DOW[dt.getDay()]+')')));
+  if((e.t||'').trim())body.appendChild(h('div',{class:'vnote lined'},e.t));
+  body.appendChild(h('div',{class:'vact'},h('button',{class:'btn',onclick:showEdit},'✏️ 수정')));
+}
+/* 쓰기 화면: 종이 일기장 */
 function renderStickers(){
   var e=dEntry(dDate),cur=e?e.s:'',box=$('#dStk');box.textContent='';
   STICKERS.forEach(function(s){
@@ -816,7 +888,7 @@ function renderStickers(){
   });
 }
 function renderDiaryPhotos(){
-  dUrls.forEach(function(u){URL.revokeObjectURL(u)});dUrls=[];
+  revokeUrls();
   var e=dEntry(dDate),box=$('#dPh');box.textContent='';
   ((e&&e.photos)||[]).forEach(function(id){
     var cell=h('div',{class:'p'},'불러오는 중…');
@@ -825,7 +897,7 @@ function renderDiaryPhotos(){
       if(!v||!v.b)return;
       var url=URL.createObjectURL(v.b);dUrls.push(url);
       var img=h('img',{src:url,alt:''});
-      img.addEventListener('click',function(){$('#bigImg').src=url;$('#imgOv').classList.add('open')});
+      img.addEventListener('click',function(){openBig(url)});
       var x=h('button',{type:'button',title:'사진 빼기','aria-label':'사진 빼기'},'✕');
       x.addEventListener('click',function(){
         flushDiary();
@@ -837,17 +909,32 @@ function renderDiaryPhotos(){
     });
   });
 }
-function renderDiary(){
-  var dt=parse(dDate),e=dEntry(dDate);
-  $('#dTitle').textContent=dt.getFullYear()+'년 '+(dt.getMonth()+1)+'월 '+dt.getDate()+'일 ('+DOW[dt.getDay()]+')'+(dDate===todayS()?' · 오늘':'');
+function showView(){
+  dMode='view';$('#dEdit').hidden=true;$('#dView').hidden=false;renderView();$('#diaryOv').scrollTop=0;
+}
+function showEdit(){
+  dMode='edit';$('#dView').hidden=true;$('#dEdit').hidden=false;
+  var e=dEntry(dDate);
+  $('#eTitle').textContent=dateLabel(dDate);
   $('#dTxt').value=e?e.t||'':'';
-  renderStickers();renderDiaryPhotos();
+  renderStickers();renderDiaryPhotos();$('#diaryOv').scrollTop=0;
 }
 function openDiary(date){
-  dDate=date||todayS();renderDiary();$('#diaryOv').classList.add('open');
+  dDate=date||todayS();
+  $('#diaryOv').classList.add('open');
+  if(dEntry(dDate))showView();else showEdit();
 }
-function closeDiary(){flushDiary();$('#diaryOv').classList.remove('open');$('#imgOv').classList.remove('open')}
-function shiftDiary(n){flushDiary();dDate=addDays(dDate,n);renderDiary()}
+function closeDiary(){flushDiary();revokeUrls();$('#diaryOv').classList.remove('open');$('#imgOv').classList.remove('open')}
+function shiftDiary(n){dDate=addDays(dDate,n);showView()}
+function finishDiary(){
+  flushDiary();
+  if(dEntry(dDate)){toast('다이어리를 올렸어요');showView()}else closeDiary();
+}
+function backDiary(){flushDiary();if(dEntry(dDate))showView();else closeDiary()}
+function refreshDiary(){
+  if(!$('#diaryOv').classList.contains('open'))return;
+  if(dMode==='edit')renderDiaryPhotos();else renderView();
+}
 async function addPhotos(files){
   if(!(await pOpen())){toast('이 브라우저에서는 사진을 저장할 수 없어요');return}
   flushDiary();
@@ -1174,7 +1261,7 @@ async function syncNow(){
       if(i===3)throw new Error('다른 기기와 저장이 계속 겹쳐요. 잠시 후 다시 시도해 주세요');
     }
     var pch=await photoSync();
-    if(pch&&$('#diaryOv').classList.contains('open'))renderDiaryPhotos();
+    if(pch)refreshDiary();
     setStatus('ok');
     if(changed){if(listBusy())sync.pendingRender=true;else renderAll()}
   }catch(e){
@@ -1238,12 +1325,11 @@ function bind(){
     $(s).addEventListener('mousedown',function(e){if(e.target===this)this.classList.remove('open')});
   });
   $('#diaryBtn').onclick=function(){openDiary(todayS())};
-  $('#dClose').onclick=closeDiary;
-  $('#dPrev').onclick=function(){shiftDiary(-1)};$('#dNext').onclick=function(){shiftDiary(1)};
+  $('#vClose').onclick=closeDiary;$('#eBack').onclick=backDiary;$('#dDone').onclick=finishDiary;
+  $('#vPrev').onclick=function(){shiftDiary(-1)};$('#vNext').onclick=function(){shiftDiary(1)};
   $('#dTxt').addEventListener('input',function(){clearTimeout(dTimer);dTimer=setTimeout(flushDiary,600)});
   $('#dAdd').onclick=function(){$('#dFile').click()};
   $('#dFile').onchange=function(){var f=[].slice.call(this.files);this.value='';if(f.length)addPhotos(f)};
-  $('#diaryOv').addEventListener('mousedown',function(e){if(e.target===this)closeDiary()});
   $('#imgOv').addEventListener('click',function(){this.classList.remove('open')});
   $('#helpClose').onclick=function(){$('#helpOv').classList.remove('open')};
   $('#evTitle').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing)saveEv()});
