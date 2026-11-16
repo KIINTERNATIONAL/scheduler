@@ -64,7 +64,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 .dow div{padding:8px 6px;text-align:center;font-size:12px;color:var(--sub)}
 .dow div:first-child{color:var(--sun)} .dow div:last-child{color:var(--sat)}
 .grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))}
-.cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 5px 2px;min-width:0;min-height:0;cursor:pointer;display:flex;flex-direction:column;overflow:hidden}
+.cell{position:relative;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:3px 5px 2px;min-width:0;min-height:0;cursor:pointer;display:flex;flex-direction:column;overflow:hidden}
 .cell:nth-child(7n){border-right:0}
 .cell:hover{background:var(--hover)}
 .cell.out .num{color:var(--sub);opacity:.55}
@@ -92,6 +92,22 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 .pdot{width:8px;height:8px;border-radius:50%;flex:none}
 .pdot.todo{background:transparent !important;border:2px solid}
 .pdot.todo.done{opacity:.4}
+
+/* diary */
+.stk{position:absolute;right:3px;bottom:1px;font-size:14px;line-height:1;cursor:pointer;z-index:2}
+.cell.hasd .items{margin-bottom:15px}
+.dnav{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.dnav b{flex:1;text-align:center;font-size:15px}
+.stks{display:flex;flex-wrap:wrap;gap:6px}
+.stks button{font-size:20px;line-height:1;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:4px 6px}
+.stks button.on{border-color:var(--acc);background:var(--acc-soft)}
+#dTxt{min-height:170px;line-height:1.6}
+.dph{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.dph .p{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--hover);display:flex;align-items:center;justify-content:center;color:var(--sub);font-size:11px}
+.dph img{width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
+.dph .p button{position:absolute;top:3px;right:3px;width:22px;height:22px;border:0;border-radius:11px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:1;padding:0}
+#imgOv{background:rgba(0,0,0,.85)}
+#bigImg{max-width:100%;max-height:92vh;border-radius:8px}
 
 /* right column */
 .whead{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--line);flex:none}
@@ -176,6 +192,12 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 }
 @media (max-width:700px){
   .tcount{display:none}
+  header h1{font-size:16px;margin:0 2px 0 0}
+  header{gap:6px}
+  #monthTitle{min-width:0;font-size:16px}
+  #diaryBtn{padding:6px 8px;font-size:13px}
+  .stk{font-size:12px;right:1px}
+  .cell.hasd .items{margin-bottom:13px}
   main{padding:0 0 12px;gap:10px}
   main>section.panel{border-left:0;border-right:0;border-radius:0}
   .cell{padding:2px 0 1px}
@@ -200,6 +222,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
     <button class="btn icon" id="prevM" aria-label="이전 달">‹</button>
     <div id="monthTitle"></div>
     <button class="btn icon" id="nextM" aria-label="다음 달">›</button>
+    <button class="btn" id="diaryBtn">📖 다이어리</button>
     <div class="spacer"></div>
     <button class="btn" id="syncBtn" title="클라우드 동기화">☁ 연결</button>
     <button class="btn" id="installBtn" style="display:none">앱 설치</button>
@@ -271,6 +294,26 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
     </div>
   </div>
 </div>
+
+<!-- diary modal -->
+<div class="ov" id="diaryOv">
+  <div class="modal" style="max-width:520px">
+    <div class="dnav"><button class="btn icon" id="dPrev" aria-label="전날">‹</button><b id="dTitle"></b><button class="btn icon" id="dNext" aria-label="다음날">›</button></div>
+    <label>스티커 (달력 칸에 표시돼요)</label>
+    <div class="stks" id="dStk"></div>
+    <label>기록</label>
+    <textarea id="dTxt" placeholder="오늘 하루는 어땠나요?"></textarea>
+    <div class="dph" id="dPh"></div>
+    <div class="mfoot">
+      <button class="btn" id="dAdd">📷 사진 추가</button>
+      <input type="file" id="dFile" accept="image/*" multiple hidden>
+      <div class="sp"></div>
+      <button class="btn primary" id="dClose">닫기</button>
+    </div>
+    <div class="note" style="margin-top:8px">글은 쓰는 대로 자동 저장돼요. 사진은 줄여서 저장소에 올려 폰·PC에서 같이 보여요.</div>
+  </div>
+</div>
+<div class="ov" id="imgOv"><img id="bigImg" alt=""></div>
 
 <!-- category modal -->
 <div class="ov" id="catOv">
@@ -354,12 +397,12 @@ function todayS(){return ds(new Date())}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 
 /* ---------- state ---------- */
-var S={events:[],todos:{},tomb:{},cats:[],memos:[]};   // tomb: 삭제한 항목 id -> 삭제 시각 (동기화 때 부활 방지)
+var S={events:[],todos:{},tomb:{},cats:[],memos:[],diary:[]};   // tomb: 삭제한 항목 id -> 삭제 시각 (동기화 때 부활 방지)
 var storageOK=true,migrated=false;
 function load(){
   try{
     var r=localStorage.getItem(KEY);
-    if(r){var o=JSON.parse(r);S.events=o.events||[];S.todos=o.todos||{};S.tomb=o.tomb||{};S.cats=o.cats||[];S.memos=o.memos||[]}
+    if(r){var o=JSON.parse(r);S.events=o.events||[];S.todos=o.todos||{};S.tomb=o.tomb||{};S.cats=o.cats||[];S.memos=o.memos||[];S.diary=o.diary||[]}
   }catch(e){storageOK=false}
   if(!S.cats.length)S.cats=JSON.parse(JSON.stringify(DEFAULT_CATS));
   S.events.forEach(function(e){if(!e.u)e.u=1});
@@ -371,6 +414,7 @@ function load(){
     });
   });
   S.memos.forEach(function(m){if(!m.u)m.u=1});
+  S.diary.forEach(function(m){if(!m.u)m.u=1});
   for(var d in S.todos)S.todos[d].forEach(function(t){if(!t.u)t.u=1});
 }
 function save(){
@@ -485,10 +529,11 @@ function renderMonth(){
   var grid=$('#grid');grid.textContent='';
   var td=todayS();
   var narrow=window.innerWidth<=700;
+  var dmap={};S.diary.forEach(function(x){dmap[x.date]=x});
   for(var i=0;i<42;i++){
     var d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);
     var s=ds(d);
-    var cls='cell'+(d.getMonth()!==view.m?' out':'')+(s===td?' today':'')+(s===sel?' sel':'');
+    var cls='cell'+(d.getMonth()!==view.m?' out':'')+(s===td?' today':'')+(s===sel?' sel':'')+(dmap[s]?' hasd':'');
     var cell=h('div',{class:cls,'data-d':s});
     var top=h('div',{class:'top'},h('span',{class:'num'},''+d.getDate()));
     var tl=(S.todos[s]||[]);
@@ -503,6 +548,7 @@ function renderMonth(){
       box.appendChild(todoNode(t));
     });
     cell.appendChild(box);
+    if(dmap[s])cell.appendChild(h('span',{class:'stk',title:'다이어리',onclick:(function(s){return function(ev){ev.stopPropagation();openDiary(s)}})(s)},dmap[s].s||'📖'));
     cell.addEventListener('click',(function(s){return function(){selectDay(s)}})(s));
     cell.addEventListener('dblclick',(function(s){return function(){openEv(null,s)}})(s));
     grid.appendChild(cell);
@@ -536,6 +582,7 @@ function dayCard(d,dt,td,detail){
     h('span',{class:'d'+(dow===0?' sun':dow===6?' sat':''),onclick:function(){selectDay(d)}},(dt.getMonth()+1)+'/'+dt.getDate()+' ('+DOW[dow]+')'),
     d===td?h('span',{class:'badge'},'오늘'):null,
     h('span',{class:'sp'}),
+    h('button',{class:'mini',title:'다이어리',onclick:function(){openDiary(d)}},(dEntry(d)&&dEntry(d).s)||'📖'),
     h('button',{class:'mini',title:'일정 추가',onclick:function(){openEv(null,d)}},'+ 일정')
   ));
 
@@ -700,6 +747,153 @@ function delEv(){
   S.events=S.events.filter(function(x){return x.id!==editingId});
   S.tomb[editingId]=Date.now();
   touch();closeEv();renderAll();
+}
+
+/* ---------- diary ---------- */
+var STICKERS=['😊','🥰','😴','😢','😡','🤒','🥳','💪','🍀','☕','🏃','📷'];
+function dEntry(date){for(var i=0;i<S.diary.length;i++)if(S.diary[i].date===date)return S.diary[i];return null}
+function diarySet(date,patch){
+  var e=dEntry(date),now=Date.now();
+  var n=e?JSON.parse(JSON.stringify(e)):{id:'d-'+date,date:date,t:'',photos:[],s:'',u:0};
+  for(var k in patch)n[k]=patch[k];
+  n.u=now;
+  var empty=!(n.t||'').trim()&&!(n.photos||[]).length&&!n.s;
+  S.diary=S.diary.filter(function(x){return x.id!==n.id});
+  if(empty){if(e)S.tomb[n.id]=now}
+  else S.diary.push(n);
+  touch();renderMonth();renderWeek();
+}
+/* 사진 보관함(IndexedDB) */
+var pdb=null;
+function pOpen(){
+  return new Promise(function(res){
+    if(pdb)return res(pdb);
+    try{
+      var r=indexedDB.open('scheduler-photos',1);
+      r.onupgradeneeded=function(){r.result.createObjectStore('p')};
+      r.onsuccess=function(){pdb=r.result;res(pdb)};
+      r.onerror=function(){res(null)};
+    }catch(e){res(null)}
+  });
+}
+function pReq(mode,fn){
+  return pOpen().then(function(db){
+    return new Promise(function(res){
+      if(!db)return res(null);
+      try{var q=fn(db.transaction('p',mode).objectStore('p'));q.onsuccess=function(){res(q.result===undefined?null:q.result)};q.onerror=function(){res(null)}}catch(e){res(null)}
+    });
+  });
+}
+function pGet(id){return pReq('readonly',function(s){return s.get(id)})}
+function pPut(id,v){return pReq('readwrite',function(s){return s.put(v,id)})}
+function pKeys(){return pReq('readonly',function(s){return s.getAllKeys()}).then(function(k){return k||[]})}
+function shrink(file){
+  return new Promise(function(res,rej){
+    var url=URL.createObjectURL(file),img=new Image();
+    img.onload=function(){
+      var w=img.naturalWidth,hh=img.naturalHeight,k=Math.min(1,1280/Math.max(w,hh));
+      var c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*k));c.height=Math.max(1,Math.round(hh*k));
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+      c.toBlob(function(b){b?res(b):rej()},'image/jpeg',0.82);
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);rej()};
+    img.src=url;
+  });
+}
+var dDate=todayS(),dTimer=null,dUrls=[];
+function flushDiary(){
+  if(dTimer){clearTimeout(dTimer);dTimer=null;
+    var e=dEntry(dDate),v=$('#dTxt').value;
+    if((e?e.t||'':'')!==v)diarySet(dDate,{t:v});
+  }
+}
+function renderStickers(){
+  var e=dEntry(dDate),cur=e?e.s:'',box=$('#dStk');box.textContent='';
+  STICKERS.forEach(function(s){
+    var b=h('button',{class:s===cur?'on':'',type:'button'},s);
+    b.addEventListener('click',function(){flushDiary();diarySet(dDate,{s:s===cur?'':s});renderStickers()});
+    box.appendChild(b);
+  });
+}
+function renderDiaryPhotos(){
+  dUrls.forEach(function(u){URL.revokeObjectURL(u)});dUrls=[];
+  var e=dEntry(dDate),box=$('#dPh');box.textContent='';
+  ((e&&e.photos)||[]).forEach(function(id){
+    var cell=h('div',{class:'p'},'불러오는 중…');
+    box.appendChild(cell);
+    pGet(id).then(function(v){
+      if(!v||!v.b)return;
+      var url=URL.createObjectURL(v.b);dUrls.push(url);
+      var img=h('img',{src:url,alt:''});
+      img.addEventListener('click',function(){$('#bigImg').src=url;$('#imgOv').classList.add('open')});
+      var x=h('button',{type:'button',title:'사진 빼기','aria-label':'사진 빼기'},'✕');
+      x.addEventListener('click',function(){
+        flushDiary();
+        var cur=dEntry(dDate);
+        diarySet(dDate,{photos:((cur&&cur.photos)||[]).filter(function(p){return p!==id})});
+        renderDiaryPhotos();
+      });
+      cell.textContent='';cell.appendChild(img);cell.appendChild(x);
+    });
+  });
+}
+function renderDiary(){
+  var dt=parse(dDate),e=dEntry(dDate);
+  $('#dTitle').textContent=dt.getFullYear()+'년 '+(dt.getMonth()+1)+'월 '+dt.getDate()+'일 ('+DOW[dt.getDay()]+')'+(dDate===todayS()?' · 오늘':'');
+  $('#dTxt').value=e?e.t||'':'';
+  renderStickers();renderDiaryPhotos();
+}
+function openDiary(date){
+  dDate=date||todayS();renderDiary();$('#diaryOv').classList.add('open');
+}
+function closeDiary(){flushDiary();$('#diaryOv').classList.remove('open');$('#imgOv').classList.remove('open')}
+function shiftDiary(n){flushDiary();dDate=addDays(dDate,n);renderDiary()}
+async function addPhotos(files){
+  if(!(await pOpen())){toast('이 브라우저에서는 사진을 저장할 수 없어요');return}
+  flushDiary();
+  var ids=[];
+  for(var i=0;i<files.length;i++){
+    try{var b=await shrink(files[i]);var id=uid()+'.jpg';await pPut(id,{b:b,up:0});ids.push(id)}
+    catch(e){toast('사진을 처리하지 못했어요')}
+  }
+  if(ids.length){
+    var cur=dEntry(dDate);
+    diarySet(dDate,{photos:((cur&&cur.photos)||[]).concat(ids)});
+    renderDiaryPhotos();
+  }
+}
+function blobB64(b){
+  return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(String(r.result).split(',')[1]||'')};r.onerror=rej;r.readAsDataURL(b)});
+}
+function photoURL(id){
+  var c=sync.cfg;
+  return (c.api||'https://api.github.com')+'/repos/'+encodeURIComponent(c.owner)+'/'+encodeURIComponent(c.repo)+'/contents/photos/'+encodeURIComponent(id)+(c.branch?'?ref='+encodeURIComponent(c.branch):'');
+}
+var photoMiss={};
+async function photoSync(){
+  try{
+    if(!(await pOpen()))return false;
+    var need={};S.diary.forEach(function(e){(e.photos||[]).forEach(function(id){need[id]=1})});
+    var ids=Object.keys(need);if(!ids.length)return false;
+    var changed=false;
+    for(var i=0;i<ids.length;i++){
+      var id=ids[i],v=await pGet(id);
+      if(v&&v.b){
+        if(v.up===0){   // 아직 못 올린 사진 올리기
+          var body={message:'photo',content:await blobB64(v.b)};
+          if(sync.cfg.branch)body.branch=sync.cfg.branch;
+          var r=await fetch(photoURL(id),{method:'PUT',headers:hdrs({'Content-Type':'application/json'}),body:JSON.stringify(body)});
+          if(r.ok||r.status===422){await pPut(id,{b:v.b,up:1})}
+          else if(r.status===401||r.status===403)return changed;
+        }
+      }else if(!photoMiss[id]||Date.now()-photoMiss[id]>5*60*1000){   // 다른 기기에서 올린 사진 받기
+        var g=await fetch(photoURL(id),{headers:hdrs({'Accept':'application/vnd.github.raw+json'}),cache:'no-store'});
+        if(g.ok){await pPut(id,{b:await g.blob(),up:1});changed=true;delete photoMiss[id]}
+        else photoMiss[id]=Date.now();
+      }
+    }
+    return changed;
+  }catch(e){return false}
 }
 
 /* ---------- category modal ---------- */
@@ -904,7 +1098,8 @@ function mergeState(a,b){
     todos:todos,
     tomb:tomb,
     cats:mergeList(a.cats,b.cats).sort(function(x,y){return (x.o||0)-(y.o||0)||byId(x,y)}),
-    memos:mergeList(a.memos,b.memos).sort(byId)
+    memos:mergeList(a.memos,b.memos).sort(byId),
+    diary:mergeList(a.diary,b.diary).sort(byId)
   };
 }
 function canon(st){
@@ -913,7 +1108,8 @@ function canon(st){
     t:flatTodos(st.todos).sort(byId),
     x:st.tomb||{},
     c:(st.cats||[]).slice().sort(byId),
-    m:(st.memos||[]).slice().sort(byId)
+    m:(st.memos||[]).slice().sort(byId),
+    d:(st.diary||[]).slice().sort(byId)
   });
 }
 async function remoteGet(){
@@ -967,16 +1163,18 @@ async function syncNow(){
     var changed=false;
     for(var i=0;i<4;i++){
       var rem=await remoteGet();
-      var merged=mergeState(S,rem.data||{events:[],todos:{},tomb:{},cats:[],memos:[]});
+      var merged=mergeState(S,rem.data||{events:[],todos:{},tomb:{},cats:[],memos:[],diary:[]});
       if(canon(merged)!==canon(S))changed=true;
-      S.events=merged.events;S.todos=merged.todos;S.tomb=merged.tomb;S.cats=merged.cats;S.memos=merged.memos;
+      S.events=merged.events;S.todos=merged.todos;S.tomb=merged.tomb;S.cats=merged.cats;S.memos=merged.memos;S.diary=merged.diary;
       if(!S.cats.length)S.cats=JSON.parse(JSON.stringify(DEFAULT_CATS));
       save();
       if(rem.data&&canon(merged)===canon(rem.data))break;   // 이미 같음
-      var res=await remotePut({events:S.events,todos:S.todos,tomb:S.tomb,cats:S.cats,memos:S.memos},rem.sha);
+      var res=await remotePut({events:S.events,todos:S.todos,tomb:S.tomb,cats:S.cats,memos:S.memos,diary:S.diary},rem.sha);
       if(res.ok)break;
       if(i===3)throw new Error('다른 기기와 저장이 계속 겹쳐요. 잠시 후 다시 시도해 주세요');
     }
+    var pch=await photoSync();
+    if(pch&&$('#diaryOv').classList.contains('open'))renderDiaryPhotos();
     setStatus('ok');
     if(changed){if(listBusy())sync.pendingRender=true;else renderAll()}
   }catch(e){
@@ -1023,6 +1221,7 @@ function offSync(){
 
 /* ---------- wire up ---------- */
 function closeAll(){
+  closeDiary();
   ['#evOv','#helpOv','#syncOv','#catOv'].forEach(function(s){$(s).classList.remove('open')});
   $('#menu').classList.remove('open');
 }
@@ -1038,6 +1237,14 @@ function bind(){
   ['#evOv','#helpOv','#syncOv','#catOv'].forEach(function(s){
     $(s).addEventListener('mousedown',function(e){if(e.target===this)this.classList.remove('open')});
   });
+  $('#diaryBtn').onclick=function(){openDiary(todayS())};
+  $('#dClose').onclick=closeDiary;
+  $('#dPrev').onclick=function(){shiftDiary(-1)};$('#dNext').onclick=function(){shiftDiary(1)};
+  $('#dTxt').addEventListener('input',function(){clearTimeout(dTimer);dTimer=setTimeout(flushDiary,600)});
+  $('#dAdd').onclick=function(){$('#dFile').click()};
+  $('#dFile').onchange=function(){var f=[].slice.call(this.files);this.value='';if(f.length)addPhotos(f)};
+  $('#diaryOv').addEventListener('mousedown',function(e){if(e.target===this)closeDiary()});
+  $('#imgOv').addEventListener('click',function(){this.classList.remove('open')});
   $('#helpClose').onclick=function(){$('#helpOv').classList.remove('open')};
   $('#evTitle').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing)saveEv()});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAll()});
@@ -1090,6 +1297,7 @@ function bind(){
         S.events=replaceList(S.events,o.events,t2);
         if(Array.isArray(o.cats)&&o.cats.length)S.cats=replaceList(S.cats,o.cats,t2);
         if(Array.isArray(o.memos))S.memos=replaceList(S.memos,o.memos,t2);
+        if(Array.isArray(o.diary))S.diary=replaceList(S.diary,o.diary,t2);
         S.todos=o.todos;touch();renderAll();toast('백업을 불러왔어요');
       }catch(e){toast('올바른 백업 파일이 아니에요')}
       self.value='';
@@ -1130,7 +1338,7 @@ function bind(){
   });
   document.addEventListener('visibilitychange',function(){if(!document.hidden)scheduleSync(200)});
   window.addEventListener('online',function(){scheduleSync(200)});
-  setInterval(function(){if(!document.hidden)scheduleSync(0)},30000);
+  setInterval(function(){if(!document.hidden)scheduleSync(0)},120000);   // 2분마다 (앱을 열거나 수정하면 바로 동기화)
 
   var rz;window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(function(){renderMonth();renderWeek()},120)});
   var lastDay=todayS();
