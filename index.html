@@ -136,6 +136,8 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 .dph .p button{position:absolute;top:3px;right:3px;width:22px;height:22px;border:0;border-radius:11px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:1;padding:0}
 .pfoot{position:sticky;bottom:0;display:flex;gap:8px;align-items:center;padding:10px 0 calc(10px + env(safe-area-inset-bottom));background:var(--paper);margin-top:auto}
 .pfoot .sp{flex:1}
+.pfoot{flex-wrap:wrap}
+   /* 베타: 모바일 전용 */
 .car{position:relative;border-radius:12px;overflow:hidden;background:var(--hover)}
 .cars{display:flex;align-items:flex-start;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
 .cars::-webkit-scrollbar{display:none}
@@ -363,8 +365,10 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
       <div id="dStk"></div>
       <textarea id="dTxt" class="lined" placeholder="오늘 하루는 어땠나요?"></textarea>
       <div class="dph" id="dPh"></div>
+      
       <div class="pfoot">
         <button class="btn" id="dAdd">📷 사진 추가</button>
+        
         <input type="file" id="dFile" accept="image/*" multiple hidden>
         <div class="sp"></div>
         <button class="btn primary" id="dDone">업로드</button>
@@ -389,15 +393,25 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
       <select id="annK"><option value="ann">💕 기념일 (시작일부터 세기)</option><option value="bday">🎂 생일</option></select>
       <label>이름</label>
       <input type="text" id="annT" maxlength="30" placeholder="예: 해리 / 엄마">
+      <div id="annCalWrap" hidden>
+        <label>생일 기준</label>
+        <select id="annCal"><option value="solar">양력 생일 (매년 같은 양력 날짜)</option><option value="lunar">음력 생일 (매년 같은 음력 날짜)</option></select>
+      </div>
       <label id="annDL">시작일</label>
       <input type="date" id="annD">
+      <div id="annLunIn" hidden>
+        <div class="row">
+          <div><input type="number" id="annLY" inputmode="numeric" min="1901" max="2049" placeholder="태어난 해 (예: 1960)"></div>
+          <div><select id="annLM"></select></div>
+          <div><select id="annLD"></select></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="annLL"> 윤달</label>
+      </div>
       <div id="annOptA">
         <label class="chk"><input type="checkbox" id="annRep" checked> 매년 기념일로 표시 (1주년, 2주년…)</label>
         <label class="chk"><input type="checkbox" id="annH" checked> 100일 단위로 표시 (100일, 200일…)</label>
       </div>
       <div id="annOptB" hidden>
-        <label>매년 어느 날짜로 표시할까요</label>
-        <select id="annCal"><option value="solar">양력 기준 (같은 양력 날짜)</option><option value="lunar">음력 기준 (같은 음력 날짜를 양력으로 변환)</option></select>
         <label class="chk"><input type="checkbox" id="annRepB" checked> 매년 표시</label>
         <div class="note" id="annLun" style="margin-top:6px"></div>
       </div>
@@ -1264,7 +1278,7 @@ function renderAnns(){
       lines.push(a.d+' 시작'+(a.d<=td?' · 오늘 기준 '+(dayDiff(a.d,td)+1)+'일째':' · 아직 시작 전'));
     }else{
       var la=solarToLunar(+a.d.slice(0,4),+a.d.slice(5,7),+a.d.slice(8,10));
-      lines.push(a.d+' (양력)'+(la?' = '+lunarLabel(la):'')+' · '+(a.rep?(a.cal==='lunar'?'음력 기준 매년':'양력 기준 매년'):'매년 표시 안 함'));
+      lines.push((a.cal==='lunar'&&la?lunarLabel(la)+' (양력 '+a.d+')':a.d+' (양력)'+(la?' = '+lunarLabel(la):''))+' · '+(a.rep?(a.cal==='lunar'?'음력 기준 매년':'양력 기준 매년'):'매년 표시 안 함'));
     }
     if(r.nx)lines.push('다음: '+r.nx.date+' ('+annDday(r.nx.date)+') '+r.nx.item.text+(a.k==='bday'?' · '+r.nx.item.sub:''));
     var row=h('div',{class:'arow'},h('span',{class:'ai'},a.k==='bday'?'🎂':'💕'),
@@ -1277,11 +1291,29 @@ function renderAnns(){
 function annKindUI(){
   var b=$('#annK').value==='bday';
   $('#annOptA').hidden=b;$('#annOptB').hidden=!b;
-  $('#annDL').textContent=b?'생일 (양력으로 입력)':'시작일';
+  var lm=b&&$('#annCal').value==='lunar';
+  $('#annCalWrap').hidden=!b;
+  $('#annDL').textContent=b?(lm?'음력 생일':'양력 생일'):'시작일';
+  $('#annDL').hidden=lm;$('#annD').hidden=lm;$('#annLunIn').hidden=!lm;
   annLunNote();
+}
+function annLunVals(){return {y:+$('#annLY').value,m:+$('#annLM').value,d:+$('#annLD').value,l:$('#annLL').checked}}
+function annLunSolar(){   // 음력 입력 → 양력 'YYYY-MM-DD' 또는 {err}
+  var v=annLunVals();
+  if(!(v.y>=1901&&v.y<=2049))return {err:'태어난 해를 1901~2049 사이로 입력하세요'};
+  var d=lunarToSolar(v.y,v.m,v.d,v.l);
+  if(!d)return {err:v.y+'년에는 윤'+v.m+'월이 없어요'};
+  var L=solarToLunar(+d.slice(0,4),+d.slice(5,7),+d.slice(8,10));
+  if(!L||L.d!==v.d)return {err:v.y+'년 '+(v.l?'윤':'')+v.m+'월은 '+(L?L.len:29)+'일까지예요'};
+  return d;
 }
 function annLunNote(){
   var el=$('#annLun');el.textContent='';
+  if($('#annK').value==='bday'&&$('#annCal').value==='lunar'){
+    var r=annLunSolar();
+    el.textContent=typeof r==='string'?'양력으로는 '+r+' 이에요':(annLunVals().y?r.err:'');
+    return;
+  }
   if($('#annK').value!=='bday'||!$('#annD').value)return;
   var v=$('#annD').value,L=solarToLunar(+v.slice(0,4),+v.slice(5,7),+v.slice(8,10));
   el.textContent=L?'이 날짜는 '+lunarLabel(L)+(L.leap?' (윤달이라 다른 해에는 같은 숫자의 평달로 표시)':'')+'이에요':'음력 변환은 1901~2049년만 가능해요. 이 날짜는 양력으로 표시돼요';
@@ -1297,6 +1329,12 @@ function annEdit(id){
   $('#annRep').checked=a&&a.k==='ann'?!!a.rep:true;
   $('#annH').checked=a&&a.k==='ann'?!!a.h:true;
   $('#annCal').value=a&&a.cal==='lunar'?'lunar':'solar';
+  (function(){
+    var lm=$('#annLM'),ld=$('#annLD');
+    if(!lm.options.length){for(var i=1;i<=12;i++)lm.appendChild(h('option',{value:i},i+'월'));for(var j=1;j<=30;j++)ld.appendChild(h('option',{value:j},j+'일'))}
+    var L=a&&a.k==='bday'&&a.cal==='lunar'?solarToLunar(+a.d.slice(0,4),+a.d.slice(5,7),+a.d.slice(8,10)):null;
+    $('#annLY').value=L?L.y:'';lm.value=L?L.m:1;ld.value=L?L.d:1;$('#annLL').checked=!!(L&&L.leap);
+  })();
   $('#annRepB').checked=a&&a.k==='bday'?!!a.rep:true;
   $('#annDel').style.display=a?'':'none';
   annKindUI();annShow(true);
@@ -1305,6 +1343,9 @@ function annEdit(id){
 function annSave(){
   var t=$('#annT').value.trim(),d=$('#annD').value;
   if(!t){toast('이름을 입력하세요');return}
+  if($('#annK').value==='bday'&&$('#annCal').value==='lunar'){
+    var rs=annLunSolar();if(typeof rs!=='string'){toast(rs.err);return}d=rs;
+  }
   if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){toast('날짜를 선택하세요');return}
   var k=$('#annK').value,now=Date.now();
   var item={id:annEditing||'a-'+uid(),k:k,t:t,d:d,u:now};
@@ -1319,6 +1360,8 @@ function annDelete(){
   S.anns=S.anns.filter(function(x){return x.id!==annEditing});S.tomb[annEditing]=Date.now();
   touch();renderAll();renderAnns();annShow(false);
 }
+
+
 
 /* ---------- backup ---------- */
 function download(name,text,type){
@@ -1582,6 +1625,7 @@ function bind(){
   $('#vPrev').onclick=function(){shiftDiary(-1)};$('#vNext').onclick=function(){shiftDiary(1)};
   $('#dTxt').addEventListener('input',function(){fitLines(this);clearTimeout(dTimer);dTimer=setTimeout(flushDiary,600)});
   $('#dAdd').onclick=function(){$('#dFile').click()};
+  
   $('#dFile').onchange=function(){var f=[].slice.call(this.files);this.value='';if(f.length)addPhotos(f)};
   $('#imgOv').addEventListener('click',function(){this.classList.remove('open')});
   $('#helpClose').onclick=function(){$('#helpOv').classList.remove('open')};
@@ -1605,7 +1649,7 @@ function bind(){
   $('#annAdd').onclick=function(){annEdit(null)};
   $('#annCancel').onclick=function(){annShow(false)};
   $('#annSave').onclick=annSave;$('#annDel').onclick=annDelete;
-  $('#annK').onchange=annKindUI;$('#annD').onchange=annLunNote;$('#annD').oninput=annLunNote;
+  $('#annK').onchange=annKindUI;$('#annCal').onchange=annKindUI;['annLY','annLM','annLD','annLL'].forEach(function(i){$('#'+i).oninput=annLunNote;$('#'+i).onchange=annLunNote});$('#annD').onchange=annLunNote;$('#annD').oninput=annLunNote;
   $('#mCats').onclick=function(){renderCats();$('#catOv').classList.add('open')};
   $('#catAdd').onclick=addCat;
   $('#catClose').onclick=function(){$('#catOv').classList.remove('open')};
