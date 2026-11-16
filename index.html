@@ -445,6 +445,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
     <label>파일 경로</label><input type="text" id="syPath" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="data.json">
     <label>토큰 (Fine-grained, Contents: Read and write)</label><input type="password" id="syToken" autocomplete="off" placeholder="github_pat_...">
     <div class="note" id="syMsg" style="margin-top:10px;min-height:18px"></div>
+    <button class="btn" id="syDiag" style="margin-top:8px">🔍 연결 진단 (어디서 막히는지 확인)</button>
     <div class="mfoot">
       <button class="btn danger" id="syOff">연결 해제</button>
       <div class="sp"></div>
@@ -1191,7 +1192,7 @@ async function photoSync(){
       for(var qi=0;qi<q.length;qi++){
         var did=q[qi];
         if(need[did])continue;   // 다시 쓰이는 사진이면 건드리지 않음
-        var m=await tfetch(photoURL(did),{headers:hdrs(),cache:'no-store'},40000);
+        var m=await tfetch(bust(photoURL(did)),{headers:hdrs()},40000);
         if(m.status===404)continue;   // 이미 없음
         if(m.status===401||m.status===403){left.push(did);left=left.concat(q.slice(qi+1));break}
         if(!m.ok){left.push(did);continue}
@@ -1216,7 +1217,7 @@ async function photoSync(){
           else if(r.status===401||r.status===403)return changed;
         }
       }else if(!photoMiss[id]||Date.now()-photoMiss[id]>5*60*1000){   // 다른 기기에서 올린 사진 받기
-        var g=await tfetch(photoURL(id),{headers:hdrs({'Accept':'application/vnd.github.raw+json'}),cache:'no-store'},60000);
+        var g=await tfetch(bust(photoURL(id)),{headers:hdrs({'Accept':'application/vnd.github.raw+json'})},60000);
         if(g.ok){await pPut(id,{b:await g.blob(),up:1});changed=true;delete photoMiss[id]}
         else photoMiss[id]=Date.now();
       }
@@ -1339,6 +1340,7 @@ var SYNC_KEY='scheduler-sync-v1';
 var sync={cfg:null,busy:false,again:false,timer:null,pendingRender:false};
 function loadCfg(){try{sync.cfg=JSON.parse(localStorage.getItem(SYNC_KEY)||'null')}catch(e){sync.cfg=null}}
 function cfgOK(){var c=sync.cfg;return !!(c&&c.owner&&c.repo&&c.token)}
+function bust(u){return u+(u.indexOf('?')<0?'?':'&')+'_='+Date.now()}   // 오래된 응답이 아니라 항상 최신을 받도록
 function tfetch(url,opt,ms){   // 응답이 없으면 계속 기다리지 않고 끊음
   var ctl=typeof AbortController!=='undefined'?new AbortController():null,tm=null;
   opt=opt||{};if(ctl){opt.signal=ctl.signal;tm=setTimeout(function(){ctl.abort()},ms||25000)}
@@ -1417,13 +1419,13 @@ function canon(st){
   });
 }
 async function remoteGet(){
-  var r=await tfetch(fileURL(true),{headers:hdrs(),cache:'no-store'});
+  var r=await tfetch(bust(fileURL(true)),{headers:hdrs()});
   if(r.status===404)return {sha:null,data:null};
   if(!r.ok)throw httpErr(r.status);
   var j=await r.json(),txt;
   if(j.encoding==='base64'&&j.content)txt=b64dec(j.content);
   else{
-    var r2=await tfetch(fileURL(true),{headers:hdrs({'Accept':'application/vnd.github.raw+json'}),cache:'no-store'});
+    var r2=await tfetch(bust(fileURL(true)),{headers:hdrs({'Accept':'application/vnd.github.raw+json'})});
     if(!r2.ok)throw httpErr(r2.status);
     txt=await r2.text();
   }
@@ -1504,6 +1506,25 @@ function fallbackCopy(txt,okMsg){
   var ta=h('textarea',{style:'position:fixed;left:-999px;top:0'});ta.value=txt;document.body.appendChild(ta);ta.select();
   try{document.execCommand('copy');toast(okMsg)}catch(e){prompt('아래 내용을 복사하세요',txt)}
   ta.remove();
+}
+async function runDiag(){
+  var o=$('#syOwner').value.trim(),r=$('#syRepo').value.trim(),p=($('#syPath').value.trim()||'data.json'),tk=$('#syToken').value.trim();
+  var msg=$('#syMsg');msg.style.whiteSpace='pre-line';
+  var out=[];function show(){msg.textContent=out.join('\n')}
+  async function step(name,url,opt){
+    var t0=Date.now();out.push(name+' …');show();
+    try{var res=await tfetch(url,opt,12000);out[out.length-1]=name+' → '+res.status+' ('+(Date.now()-t0)+'ms)'}
+    catch(e){out[out.length-1]=name+' → '+(e.timeout?'12초 무응답':'실패: '+((e&&e.message)||e))}
+    show();
+  }
+  var base='https://api.github.com';
+  await step('① GitHub 접속(토큰 없이)',base+'/zen');
+  if(!o||!r||!tk){out.push('아이디·저장소·토큰을 채우면 ②~④도 검사해요');show();return}
+  var H={'Authorization':'Bearer '+tk,'Accept':'application/vnd.github+json'};
+  await step('② 토큰 확인',base+'/repos/'+encodeURIComponent(o)+'/'+encodeURIComponent(r),{headers:H});
+  var f=base+'/repos/'+encodeURIComponent(o)+'/'+encodeURIComponent(r)+'/contents/'+p.split('/').map(encodeURIComponent).join('/');
+  await step('③ 데이터 파일 읽기',f+'?_='+Date.now(),{headers:H});
+  await step('④ 데이터 파일 읽기(캐시 끔)',f+'?_='+Date.now(),{headers:H,cache:'no-store'});
 }
 function openSync(){
   var c=sync.cfg||{};
@@ -1663,6 +1684,7 @@ function bind(){
       $('#syMsg').textContent='연결 코드를 불러왔어요. "저장하고 연결"을 눌러 주세요'}
     else $('#syMsg').textContent='연결 코드 형식이 아니에요 (KJD1. 로 시작해야 해요)';
   });
+  $('#syDiag').onclick=runDiag;
   $('#sySave').onclick=saveSync;$('#syOff').onclick=offSync;
   $('#syCancel').onclick=function(){$('#syncOv').classList.remove('open')};
   document.addEventListener('focusout',function(){
