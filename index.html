@@ -14,13 +14,13 @@
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Hi+Melody&family=Nanum+Pen+Script&family=Poor+Story&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#f6f7f9; --card:#fff; --ink:#1f2328; --sub:#6b7280; --line:#e5e7eb;
   --acc:#1a73e8; --acc-soft:#e8f0fe; --today:#1a73e8; --hover:#f1f3f4; --danger:#d93025;
   --sat:#1a73e8; --sun:#d93025;
-  --hand:'Gaegu','Nanum Pen Script','Apple SD Gothic Neo',cursive; --hs:1.12;
+  --hand:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif; --hs:1;
 }
 @media (prefers-color-scheme:dark){
   :root{ --bg:#111317; --card:#1b1e24; --ink:#e8eaed; --sub:#9aa0a6; --line:#2d3139;
@@ -28,7 +28,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
-body{background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+body{background:var(--bg);color:var(--ink);font:14px/1.45 "Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 button,select{font:inherit;color:inherit;cursor:pointer}
 .app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:1600px;margin:0 auto}
@@ -113,7 +113,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 .ev .bar{width:4px;align-self:stretch;border-radius:2px;flex:none;min-height:16px}
 .ev .tm{color:var(--sub);font-size:12px;min-width:46px;flex:none;padding-top:2px}
 .ev .tt{flex:1;word-break:break-word;font-family:var(--hand);font-size:calc(14px*var(--hs))}
-.enote{font-family:-apple-system,sans-serif;font-size:12.5px;color:var(--sub);white-space:pre-wrap;margin-top:1px}
+.enote{font-size:12.5px;color:var(--sub);white-space:pre-wrap;margin-top:1px}
 .todo{display:flex;align-items:flex-start;gap:6px;padding:2px 4px}
 .todo input[type=checkbox]{margin:4px 0 0;width:16px;height:16px;accent-color:var(--acc);flex:none}
 .todo .cd{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--sub);padding:0;margin-top:6px;flex:none;background:transparent}
@@ -137,7 +137,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 .mwarn{font-size:11px;color:var(--sub);padding:0 12px 8px;flex:none}
 .memo.closed .mlist,.memo.closed .mwarn{display:none}
 .mi{border:1px solid var(--line);border-radius:8px;margin-bottom:6px;overflow:hidden}
-.mi textarea{display:block;width:100%;border:0;background:transparent;color:var(--ink);padding:7px 9px;font:13px/1.5 -apple-system,"Apple SD Gothic Neo",sans-serif;resize:vertical;min-height:60px}
+.mi textarea{display:block;width:100%;border:0;background:transparent;color:var(--ink);padding:7px 9px;font:13px/1.5 "Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;resize:vertical;min-height:60px}
 .mi textarea:focus{outline:none;background:var(--hover)}
 .mi .mb{display:flex;justify-content:flex-end;gap:2px;padding:0 4px 3px}
 
@@ -176,14 +176,19 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 }
 @media (max-width:700px){
   .tcount{display:none}
-  .cell{padding:2px 1px 1px}
+  main{padding:0 0 12px;gap:10px}
+  main>section.panel{border-left:0;border-right:0;border-radius:0}
+  .cell{padding:2px 0 1px}
+  .items{margin:0}
+  .it{margin-left:0.5px;margin-right:0.5px}
   .top{justify-content:center}
-  .it{font-size:calc(11px*var(--hs));margin-bottom:2px;padding:0 3px;border-radius:4px;gap:2px}
-  .it .ck{font-size:11px}
+  .it{font-size:10.5px;margin-bottom:2px;padding:0 2px;border-radius:3px;gap:1px;line-height:1.25}
+  .it .ck{font-size:9px}
   .it.todo.chip .tx{color:var(--ink)}
-  .it.all{padding:0 3px}
-  .it.todo{padding:0 3px;gap:2px}
-  .grid{grid-template-rows:repeat(6,104px)}
+  .it.all{padding:0 2px}
+  .it.todo{padding:0 2px;gap:1px}
+  .grid{grid-template-rows:repeat(6,108px)}
+  header{padding:8px 10px}
 }
 </style>
 </head>
@@ -203,7 +208,6 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
       <button class="btn icon" id="menuBtn" aria-label="메뉴">⋯</button>
       <div class="menu" id="menu">
         <button id="mCats">카테고리 관리 (색상)</button>
-        <button id="mFont">글씨체 바꾸기</button>
         <hr>
         <button id="mSync">클라우드 동기화 설정 (GitHub)</button>
         <button id="mImport">구글 캘린더 가져오기 (.ics)</button>
@@ -338,11 +342,7 @@ var DEFAULT_CATS=[
 ];
 var OLD_NAMES={'c-work':'회사일','c-personal':'개인일','c-event':'경조사','c-etc':'기타'};
 var FONTS=[
-  {k:'gaegu',n:'개구 (손글씨)',f:"'Gaegu','Nanum Pen Script','Apple SD Gothic Neo',cursive",s:1.12},
-  {k:'pen',n:'나눔 펜 (필기체)',f:"'Nanum Pen Script','Gaegu',cursive",s:1.4},
-  {k:'poor',n:'푸어 스토리',f:"'Poor Story','Gaegu',cursive",s:1.02},
-  {k:'melody',n:'하이 멜로디',f:"'Hi Melody','Gaegu',cursive",s:1.1},
-  {k:'sans',n:'기본 고딕체',f:"inherit",s:1}
+  {k:'noto',n:'노토 산스',f:"'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif",s:1}
 ];
 
 /* ---------- date helpers ---------- */
@@ -386,7 +386,7 @@ var lastTodoCat='',lastEvCat='c-work';
 function getPref(k,def){try{var v=localStorage.getItem(k);return v===null?def:v}catch(e){return def}}
 function setPref(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function applyFont(){
-  var key=getPref('scheduler-font','gaegu');
+  var key=getPref('scheduler-font','noto');
   var f=FONTS.filter(function(x){return x.k===key})[0]||FONTS[0];
   var r=document.documentElement.style;
   r.setProperty('--hand',f.f);r.setProperty('--hs',f.s);
@@ -1048,12 +1048,6 @@ function bind(){
   $('#mCats').onclick=function(){renderCats();$('#catOv').classList.add('open')};
   $('#catAdd').onclick=addCat;
   $('#catClose').onclick=function(){$('#catOv').classList.remove('open')};
-  $('#mFont').onclick=function(){
-    var cur=getPref('scheduler-font','gaegu');
-    var i=0;FONTS.forEach(function(f,idx){if(f.k===cur)i=idx});
-    var nx=FONTS[(i+1)%FONTS.length];
-    setPref('scheduler-font',nx.k);applyFont();renderAll();toast('글씨체: '+nx.n+' (메뉴에서 누를 때마다 바뀌어요)');
-  };
   $('#mImport').onclick=function(){$('#icsFile').click()};
   $('#mHelp').onclick=function(){$('#helpOv').classList.add('open')};
   $('#mRestore').onclick=function(){$('#jsonFile').click()};
