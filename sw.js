@@ -1,5 +1,5 @@
 // 오프라인에서도 열리도록 앱 파일을 캐시합니다. 파일을 수정해 올릴 때는 VERSION 숫자를 올려 주세요.
-const VERSION = 'scheduler-v20';
+const VERSION = 'scheduler-v21';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -17,7 +17,8 @@ self.addEventListener('activate', (e) => {
 // 네트워크 우선, 실패하면 캐시 (수정본이 바로 반영되고, 오프라인이면 캐시로 열림)
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  if (new URL(e.request.url).origin !== self.location.origin) return;   // 구글 폰트·GitHub API 등은 건드리지 않음
+  if (new URL(e.request.url).origin !== self.location.origin) return;
+  if (new URL(e.request.url).pathname.indexOf('/ocr/') >= 0) return;   // 글자 인식 파일은 용량이 커서 브라우저에 맡김   // 구글 폰트·GitHub API 등은 건드리지 않음
   e.respondWith(
     fetch(e.request, { cache: 'no-store' })   // 브라우저 임시저장본이 아니라 항상 최신 파일을 받음
       .then((res) => {
