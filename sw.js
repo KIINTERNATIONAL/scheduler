@@ -1,5 +1,5 @@
 // 오프라인에서도 열리도록 앱 파일을 캐시합니다. 파일을 수정해 올릴 때는 VERSION 숫자를 올려 주세요.
-const VERSION = 'scheduler-v14';
+const VERSION = 'scheduler-v15';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', (e) => {
