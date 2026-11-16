@@ -36,6 +36,7 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 
 /* header */
 header{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header .cheer{font-size:13px;font-weight:700;color:var(--acc);letter-spacing:-.2px;white-space:nowrap}
 header h1{font-size:18px;margin:0 8px 0 0;font-weight:700;letter-spacing:-.3px}
 .btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;line-height:1.2}
 .btn:hover{background:var(--hover)}
@@ -95,6 +96,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 .pdot.todo.done{opacity:.4}
 
 /* diary */
+.mstk{position:absolute;left:3px;bottom:1px;font-size:13px;line-height:1;z-index:2;pointer-events:none}
 .stk{position:absolute;right:3px;bottom:1px;font-size:14px;line-height:1;cursor:pointer;z-index:2}
 .cell.hasd .items{margin-bottom:15px}
 .stks{display:flex;flex-wrap:wrap;gap:6px}
@@ -223,6 +225,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
   #monthTitle{min-width:0;font-size:16px}
   #diaryBtn{padding:6px 8px;font-size:13px}
   .stk{font-size:12px;right:1px}
+  .mstk{font-size:11px;left:1px}
   .cell.hasd .items{margin-bottom:13px}
   main{padding:0 0 12px;gap:10px}
   main>section.panel{border-left:0;border-right:0;border-radius:0}
@@ -266,6 +269,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
         <button id="mClearIcs">가져온 일정만 모두 삭제</button>
       </div>
     </div>
+    <span class="cheer">오늘도 잘 참자.</span>
     <input type="file" id="jsonFile" accept=".json,application/json" hidden>
   </header>
   <main>
@@ -443,6 +447,7 @@ function load(){
     });
   });
   S.memos.forEach(function(m){if(!m.u)m.u=1});
+  S.memos.forEach(function(m){if(!m.d){m.d=ds(new Date(m.u>1?m.u:Date.now()));m.u=Date.now()}});   // 예전 메모는 작성한 날짜로 붙임
   S.diary.forEach(function(m){if(!m.u)m.u=1});
   for(var d in S.todos)S.todos[d].forEach(function(t){if(!t.u)t.u=1});
 }
@@ -559,6 +564,7 @@ function renderMonth(){
   var td=todayS();
   var narrow=window.innerWidth<=700;
   var dmap={};S.diary.forEach(function(x){dmap[x.date]=x});
+  var mmap={};S.memos.forEach(function(m){if(m.d&&(m.t||'').trim())mmap[m.d]=1});
   for(var i=0;i<42;i++){
     var d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);
     var s=ds(d);
@@ -577,6 +583,7 @@ function renderMonth(){
       box.appendChild(todoNode(t));
     });
     cell.appendChild(box);
+    if(mmap[s])cell.appendChild(h('span',{class:'mstk',title:'메모'},'📝'));
     if(dmap[s])cell.appendChild(h('span',{class:'stk',title:'다이어리',onclick:(function(s){return function(ev){ev.stopPropagation();openDiary(s)}})(s)},dmap[s].s||'📖'));
     cell.addEventListener('click',(function(s){return function(){selectDay(s)}})(s));
     cell.addEventListener('dblclick',(function(s){return function(){openEv(null,s)}})(s));
@@ -695,11 +702,14 @@ function renderMemos(){
   var a=document.activeElement;
   if(a&&a.closest&&a.closest('#memoList'))return;   // 입력 중이면 건드리지 않음
   var box=$('#memoList');box.textContent='';
-  var list=S.memos.slice().reverse();
-  if(!list.length)box.appendChild(h('div',{class:'empty',style:'padding:4px 2px 8px'},'복사해 둔 글을 여기에 붙여넣어 보관하세요 (+ 새 메모)'));
+  var sd=parse(sel);
+  $('#memoToggle').textContent='메모 · '+(sd.getMonth()+1)+'/'+sd.getDate()+(S.memos.some(function(m){return m.d===sel})?' ('+S.memos.filter(function(m){return m.d===sel}).length+')':'')+(isOpen()?' ▾':' ▸');
+  var list=S.memos.filter(function(m){return m.d===sel}).reverse();
+  if(!list.length)box.appendChild(h('div',{class:'empty',style:'padding:4px 2px 8px'},'이 날의 메모가 없어요 (+ 새 메모)'));
   list.forEach(function(m){
     var ta=h('textarea',{rows:'3',placeholder:'메모…'});ta.value=m.t||'';
     ta.addEventListener('input',function(){m.t=ta.value;m.u=Date.now();touch()});
+    ta.addEventListener('blur',function(){renderMonth()});
     var copy=h('button',{class:'mini',onclick:function(){
       var done=function(){toast('복사했어요')};
       try{navigator.clipboard.writeText(ta.value).then(done,function(){ta.select();document.execCommand('copy');done()})}
@@ -708,19 +718,21 @@ function renderMemos(){
     var del=h('button',{class:'mini'},'삭제'),armed=false;
     del.addEventListener('click',function(){
       if(!armed){armed=true;del.textContent='정말 삭제?';del.style.color='var(--danger)';setTimeout(function(){armed=false;del.textContent='삭제';del.style.color=''},3000);return}
-      S.memos=S.memos.filter(function(x){return x.id!==m.id});S.tomb[m.id]=Date.now();touch();renderMemos();
+      S.memos=S.memos.filter(function(x){return x.id!==m.id});S.tomb[m.id]=Date.now();touch();renderAll();
     });
     box.appendChild(h('div',{class:'mi'},ta,h('div',{class:'mb'},copy,del)));
   });
 }
+function isOpen(){return !$('#memoBox').classList.contains('closed')}
 function setMemoOpen(open){
   $('#memoBox').classList.toggle('closed',!open);
-  $('#memoToggle').textContent='메모 '+(open?'▾':'▸');
+  renderMemos();
   setPref('scheduler-memo-open',open?'1':'0');
 }
 
 function renderAll(){renderMonth();renderWeek();renderMemos()}
 function selectDay(d){
+  var a=document.activeElement;if(a&&a.blur&&a.tagName==='TEXTAREA')a.blur();
   sel=d;var dt=parse(d);view={y:dt.getFullYear(),m:dt.getMonth()};renderAll();
 }
 
@@ -1351,7 +1363,7 @@ function bind(){
   $('#memoToggle').onclick=function(){setMemoOpen($('#memoBox').classList.contains('closed'))};
   $('#memoAdd').onclick=function(){
     setMemoOpen(true);
-    S.memos.push({id:uid(),t:'',u:Date.now()});touch();
+    S.memos.push({id:uid(),t:'',d:sel,u:Date.now()});touch();
     var a=document.activeElement;if(a&&a.blur)a.blur();
     renderMemos();
     var ta=$('#memoList textarea');if(ta)ta.focus();
