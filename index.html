@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>스케줄러</title>
+<title>KOJIDAY</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="스케줄러">
+<meta name="apple-mobile-web-app-title" content="KOJIDAY">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
@@ -37,7 +37,7 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 /* header */
 header{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
 header .cheer{font-size:13px;font-weight:700;color:var(--acc);letter-spacing:-.2px;white-space:nowrap}
-header h1{font-size:18px;margin:0 8px 0 0;font-weight:700;letter-spacing:-.3px}
+header h1{font-size:17px;margin:0 8px 0 0;font-weight:900;letter-spacing:.14em}
 .btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;line-height:1.2}
 .btn:hover{background:var(--hover)}
 .btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
@@ -75,6 +75,20 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 .top{display:flex;align-items:center;justify-content:space-between;flex:none}
 .num{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:12px;font-size:12px}
 .cell:nth-child(7n+1) .num{color:var(--sun)} .cell:nth-child(7n) .num{color:var(--sat)}
+.cell.hol .num{color:var(--sun)}
+.it.hol{color:var(--sun);font-weight:700;background:rgba(217,48,37,.10);padding:0 5px;margin-bottom:1px;cursor:default}
+@media (prefers-color-scheme:dark){.it.hol{background:rgba(242,139,130,.14)}}
+.it.mark{padding:0 5px;margin-bottom:1px;cursor:default;font-weight:600}
+.it.ann{color:#c2185b;background:rgba(233,30,99,.10)}
+.it.bd{color:#6a1b9a;background:rgba(142,36,170,.10)}
+@media (prefers-color-scheme:dark){.it.ann{color:#f48fb1;background:rgba(244,143,177,.14)}.it.bd{color:#ce93d8;background:rgba(206,147,216,.14)}}
+.aday{font-size:12.5px;padding:2px 4px;font-weight:600}
+.aday.ann{color:#c2185b}.aday.bd{color:#6a1b9a}.aday small{font-weight:400;color:var(--sub);margin-left:4px}
+@media (prefers-color-scheme:dark){.aday.ann{color:#f48fb1}.aday.bd{color:#ce93d8}}
+.arow{display:flex;gap:8px;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line)}
+.arow .ai{font-size:20px;flex:none}.arow .am{flex:1;min-width:0}.arow .am b{font-size:14px}.arow .am div{font-size:12px;color:var(--sub);line-height:1.5}
+.modal label.chk{display:flex;align-items:center;gap:7px;color:var(--ink);font-size:13px;margin:10px 0 0}
+.hday{color:var(--sun);font-weight:700;font-size:12.5px;padding:2px 4px}
 .cell.today .num{background:var(--today);color:#fff !important;font-weight:700}
 @media (prefers-color-scheme:dark){.cell.today .num{color:#111317 !important}}
 .tcount{font-size:10.5px;color:var(--sub)}
@@ -237,6 +251,8 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
   .it .ck{font-size:9px}
   .it.todo.chip .tx{color:var(--ink)}
   .it.all{padding:0 2px}
+  .it.hol{padding:0 2px}
+  .it.mark{padding:0 2px}
   .it.todo{padding:0 2px;gap:1px}
   .grid{grid-template-rows:repeat(6,108px)}
   header{padding:8px 10px}
@@ -246,7 +262,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 <body>
 <div class="app">
   <header>
-    <h1>스케줄러</h1>
+    <h1>KOJIDAY</h1>
     <button class="btn" id="todayBtn">오늘</button>
     <button class="btn icon" id="prevM" aria-label="이전 달">‹</button>
     <div id="monthTitle"></div>
@@ -259,6 +275,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
     <div class="menuwrap">
       <button class="btn icon" id="menuBtn" aria-label="메뉴">⋯</button>
       <div class="menu" id="menu">
+        <button id="mAnn">기념일 · 생일 관리</button>
         <button id="mCats">카테고리 관리 (색상)</button>
         <hr>
         <button id="mSync">클라우드 동기화 설정 (GitHub)</button>
@@ -357,6 +374,37 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
 <div class="ov" id="imgOv"><img id="bigImg" alt=""></div>
 
 <!-- category modal -->
+<div class="ov" id="annOv">
+  <div class="modal">
+    <h2>기념일 · 생일</h2>
+    <div id="annListWrap">
+      <div class="note" style="margin-bottom:10px">기념일은 시작일부터 며칠째인지 세어 주고, 생일은 음력으로도 매년 달력에 표시해요.</div>
+      <div id="annList"></div>
+      <button class="btn" id="annAdd">+ 추가</button>
+      <div class="mfoot"><div class="sp"></div><button class="btn primary" id="annClose">닫기</button></div>
+    </div>
+    <div id="annForm" hidden>
+      <label>종류</label>
+      <select id="annK"><option value="ann">💕 기념일 (시작일부터 세기)</option><option value="bday">🎂 생일</option></select>
+      <label>이름</label>
+      <input type="text" id="annT" maxlength="30" placeholder="예: 해리 / 엄마">
+      <label id="annDL">시작일</label>
+      <input type="date" id="annD">
+      <div id="annOptA">
+        <label class="chk"><input type="checkbox" id="annRep" checked> 매년 기념일로 표시 (1주년, 2주년…)</label>
+        <label class="chk"><input type="checkbox" id="annH" checked> 100일 단위로 표시 (100일, 200일…)</label>
+      </div>
+      <div id="annOptB" hidden>
+        <label>매년 어느 날짜로 표시할까요</label>
+        <select id="annCal"><option value="solar">양력 기준 (같은 양력 날짜)</option><option value="lunar">음력 기준 (같은 음력 날짜를 양력으로 변환)</option></select>
+        <label class="chk"><input type="checkbox" id="annRepB" checked> 매년 표시</label>
+        <div class="note" id="annLun" style="margin-top:6px"></div>
+      </div>
+      <div class="mfoot"><button class="btn danger" id="annDel">삭제</button><div class="sp"></div><button class="btn" id="annCancel">취소</button><button class="btn primary" id="annSave">저장</button></div>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="catOv">
   <div class="modal">
     <h2>카테고리 (색상)</h2>
@@ -430,12 +478,12 @@ function todayS(){return ds(new Date())}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 
 /* ---------- state ---------- */
-var S={events:[],todos:{},tomb:{},cats:[],memos:[],diary:[]};   // tomb: 삭제한 항목 id -> 삭제 시각 (동기화 때 부활 방지)
+var S={events:[],todos:{},tomb:{},cats:[],memos:[],diary:[],anns:[]};   // tomb: 삭제한 항목 id -> 삭제 시각 (동기화 때 부활 방지)
 var storageOK=true,migrated=false;
 function load(){
   try{
     var r=localStorage.getItem(KEY);
-    if(r){var o=JSON.parse(r);S.events=o.events||[];S.todos=o.todos||{};S.tomb=o.tomb||{};S.cats=o.cats||[];S.memos=o.memos||[];S.diary=o.diary||[]}
+    if(r){var o=JSON.parse(r);S.events=o.events||[];S.todos=o.todos||{};S.tomb=o.tomb||{};S.cats=o.cats||[];S.memos=o.memos||[];S.diary=o.diary||[];S.anns=o.anns||[]}
   }catch(e){storageOK=false}
   if(!S.cats.length)S.cats=JSON.parse(JSON.stringify(DEFAULT_CATS));
   S.events.forEach(function(e){if(!e.u)e.u=1});
@@ -449,6 +497,7 @@ function load(){
   S.memos.forEach(function(m){if(!m.u)m.u=1});
   S.memos.forEach(function(m){if(!m.d){m.d=ds(new Date(m.u>1?m.u:Date.now()));m.u=Date.now()}});   // 예전 메모는 작성한 날짜로 붙임
   S.diary.forEach(function(m){if(!m.u)m.u=1});
+  S.anns.forEach(function(m){if(!m.u)m.u=1});
   for(var d in S.todos)S.todos[d].forEach(function(t){if(!t.u)t.u=1});
 }
 function save(){
@@ -510,6 +559,108 @@ function catSelect(cls,value,noneLabel){
 }
 
 /* ---------- queries ---------- */
+/* ---------- 음력 변환 (1901~2049, 한국천문연구원 기준 데이터) ---------- */
+var LUNAR=[29984,59984,91301,25776,43440,87396,22176,46480,95522,29984,111190,45648,42160,76213,43728,22176,46738,47760,111911,55584,53840,107733,38240,11088,88788,27968,55952,121122,59680,53862,21104,42352,76645,44448,27968,60051,29840,92471,43312,21168,42422,38608,46752,111940,47680,46224,108850,43344,86711,21200,43728,87717,56096,55872,119955,54432,108888,43360,21856,43862,44368,27936,59988,59984,58528,51555,43440,87399,22176,46480,95525,29984,29264,91316,42160,76472,10960,22192,46742,55952,55584,111188,53840,107738,42336,11104,88790,27968,55952,121125,59680,53856,42339,42352,76648,46496,27968,60565,29840,26928,86644,21168,42416,87458,13984,111959,47680,46224,108853,43344,21200,42451,43728,88745,23840,55888,119973,54432,43344,86740,21856,43856,88738,27936,59990,59984,58528,51557,51632,21920,44371,46736,95531,29984,45648,91318,42160,19120,21941,22224,46736,111906,55584,119383,53840,42192,84693,11104,23376];
+var _LS=null;
+function dnum(y,m,d){return Math.round(Date.UTC(y,m-1,d)/86400000)}
+function lMonths(ly){
+  var v=LUNAR[ly-1901],leap=v&15,bits=v>>4,out=[],i=0;
+  for(var m=1;m<=12;m++){
+    out.push({m:m,l:0,len:((bits>>i)&1)?30:29});i++;
+    if(m===leap){out.push({m:m,l:1,len:((bits>>i)&1)?30:29});i++}
+  }
+  return out;
+}
+function lStarts(){
+  if(_LS)return _LS;
+  _LS={};var n=dnum(1901,2,19);
+  for(var y=1901;y<=2049;y++){_LS[y]=n;lMonths(y).forEach(function(x){n+=x.len})}
+  _LS[2050]=n;return _LS;
+}
+function solarToLunar(y,m,d){      // 양력 → {y,m,d,leap} (범위 밖이면 null)
+  var st=lStarts(),n=dnum(y,m,d);
+  if(n<st[1901]||n>=st[2050])return null;
+  var ly=y;if(ly>2049||n<st[ly])ly=y-1;
+  if(ly<1901||n<st[ly])return null;
+  var off=n-st[ly],ms=lMonths(ly);
+  for(var i=0;i<ms.length;i++){
+    if(off<ms[i].len)return {y:ly,m:ms[i].m,d:off+1,leap:ms[i].l,len:ms[i].len};
+    off-=ms[i].len;
+  }
+  return null;
+}
+function lunarToSolar(ly,m,d,leap){   // 음력 → 'YYYY-MM-DD' (없는 날이면 그 달 말일로)
+  if(ly<1901||ly>2049)return null;
+  var st=lStarts(),n=st[ly],ms=lMonths(ly);
+  for(var i=0;i<ms.length;i++){
+    if(ms[i].m===m&&ms[i].l===(leap?1:0)){
+      var dd=Math.min(d,ms[i].len),t=new Date((n+dd-1)*86400000);
+      return t.getUTCFullYear()+'-'+('0'+(t.getUTCMonth()+1)).slice(-2)+'-'+('0'+t.getUTCDate()).slice(-2);
+    }
+    n+=ms[i].len;
+  }
+  return null;
+}
+
+/* ---------- 기념일 · 생일 ---------- */
+function isLeapY(y){return (y%4===0&&y%100!==0)||y%400===0}
+function dayDiff(a,b){var x=a.split('-'),y=b.split('-');return dnum(+y[0],+y[1],+y[2])-dnum(+x[0],+x[1],+x[2])}
+function lunarLabel(L){return '음력 '+(L.leap?'윤':'')+L.m+'월 '+L.d+'일'}
+function annMatch(a,s,L){        // s 날짜에 이 항목이 뜨는지 → {icon,text,sub} 또는 null.  L = s의 음력(미리 계산)
+  if(!a.d||s<a.d)return null;
+  var y=+s.slice(0,4),by=+a.d.slice(0,4),md=s.slice(5),bmd=a.d.slice(5);
+  var feb=(bmd==='02-29'&&md==='02-28'&&!isLeapY(y));
+  if(a.k==='bday'){
+    if(s===a.d)return {k:'bd',icon:'🎂',text:a.t+' 태어난 날',short:a.t,sub:'🎂'};
+    if(!a.rep)return null;
+    if(a.cal==='lunar'){
+      var la=solarToLunar(+a.d.slice(0,4),+a.d.slice(5,7),+a.d.slice(8,10));
+      if(la&&L){
+        if(L.leap||L.m!==la.m)return null;
+        if(!(L.d===la.d||(la.d===30&&L.len===29&&L.d===29)))return null;
+        return {k:'bd',icon:'🎂',text:a.t+' 생일 (음력)',short:a.t,sub:lunarLabel(L)+' · 만 '+(L.y-la.y)+'세'};
+      }
+      /* 음력 변환 범위 밖이면 양력으로 */
+    }
+    if(md===bmd||feb)return {k:'bd',icon:'🎂',text:a.t+' 생일',short:a.t,sub:'만 '+(y-by)+'세'};
+    return null;
+  }
+  var n=dayDiff(a.d,s)+1;
+  if(s===a.d)return {k:'ann',icon:'💕',text:a.t+' 시작',sub:'1일째'};
+  if(a.rep&&(md===bmd||feb)&&y>by)return {k:'ann',icon:'💕',text:a.t+' '+(y-by)+'주년',sub:n+'일째'};
+  if(a.h&&n%100===0)return {k:'ann',icon:'💕',text:a.t+' '+n+'일',sub:'100일 단위'};
+  return null;
+}
+function annOn(s){
+  if(!S.anns.length)return [];
+  var out=[],L=null,y=+s.slice(0,4);
+  if(S.anns.some(function(a){return a.k==='bday'&&a.cal==='lunar'}))L=solarToLunar(y,+s.slice(5,7),+s.slice(8,10));
+  S.anns.forEach(function(a){var r=annMatch(a,s,L);if(r){r.a=a;out.push(r)}});
+  return out;
+}
+function annNext(a,from){   // 오늘부터 다음으로 뜨는 날 → {date,item}
+  var s=from;
+  for(var i=0;i<800;i++){
+    var L=a.cal==='lunar'?solarToLunar(+s.slice(0,4),+s.slice(5,7),+s.slice(8,10)):null;
+    var r=annMatch(a,s,L);if(r)return {date:s,item:r};
+    s=addDays(s,1);
+  }
+  return null;
+}
+
+/* ---------- 한국 공휴일 (월력요항 기준; 임시공휴일은 발표되면 추가 필요) ---------- */
+var HOL={
+ 2025:{'01-01':'신정','01-27':'임시공휴일','01-28':'설 연휴','01-29':'설날','01-30':'설 연휴','03-01':'삼일절','03-03':'대체공휴일(삼일절)','05-01':'노동절','05-05':'어린이날·부처님오신날','05-06':'대체공휴일','06-03':'대통령선거','06-06':'현충일','08-15':'광복절','10-03':'개천절','10-05':'추석 연휴','10-06':'추석','10-07':'추석 연휴','10-08':'대체공휴일(추석)','10-09':'한글날','12-25':'성탄절'},
+ 2026:{'01-01':'신정','02-16':'설 연휴','02-17':'설날','02-18':'설 연휴','03-01':'삼일절','03-02':'대체공휴일(삼일절)','05-01':'노동절','05-05':'어린이날','05-24':'부처님오신날','05-25':'대체공휴일(부처님오신날)','06-03':'지방선거','06-06':'현충일','08-15':'광복절','08-17':'대체공휴일(광복절)','09-24':'추석 연휴','09-25':'추석','09-26':'추석 연휴','10-03':'개천절','10-05':'대체공휴일(개천절)','10-09':'한글날','12-25':'성탄절'},
+ 2027:{'01-01':'신정','02-06':'설 연휴','02-07':'설날','02-08':'설 연휴','02-09':'대체공휴일(설날)','03-01':'삼일절','05-01':'노동절','05-03':'대체공휴일(노동절)','05-05':'어린이날','05-13':'부처님오신날','06-06':'현충일','07-17':'제헌절','07-19':'대체공휴일(제헌절)','08-15':'광복절','08-16':'대체공휴일(광복절)','09-14':'추석 연휴','09-15':'추석','09-16':'추석 연휴','10-03':'개천절','10-04':'대체공휴일(개천절)','10-09':'한글날','10-11':'대체공휴일(한글날)','12-25':'성탄절','12-27':'대체공휴일(성탄절)'},
+ 2028:{'01-01':'신정','01-26':'설 연휴','01-27':'설날','01-28':'설 연휴','03-01':'삼일절','05-01':'노동절','05-02':'부처님오신날','05-05':'어린이날','06-06':'현충일','07-17':'제헌절','08-15':'광복절','10-02':'추석 연휴','10-03':'추석·개천절','10-04':'추석 연휴','10-05':'대체공휴일','10-09':'한글날','12-25':'성탄절'}
+};
+var HOL_FIXED={'01-01':'신정','03-01':'삼일절','05-01':'노동절','05-05':'어린이날','06-06':'현충일','07-17':'제헌절','08-15':'광복절','10-03':'개천절','10-09':'한글날','12-25':'성탄절'};
+function holName(d){   // d='YYYY-MM-DD' → 공휴일 이름 또는 ''
+  var y=+d.slice(0,4),md=d.slice(5);
+  if(HOL[y])return HOL[y][md]||'';
+  return y>2028?(HOL_FIXED[md]||''):'';   // 2029년~: 양력 고정 공휴일만 (설날·추석 등은 데이터 추가 필요)
+}
 function eventsOn(d){
   return S.events.filter(function(e){return d>=e.date&&d<=(e.endDate||e.date)}).sort(function(a,b){
     if(a.allDay!==b.allDay)return a.allDay?-1:1;
@@ -568,7 +719,7 @@ function renderMonth(){
   for(var i=0;i<42;i++){
     var d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);
     var s=ds(d);
-    var cls='cell'+(d.getMonth()!==view.m?' out':'')+(s===td?' today':'')+(s===sel?' sel':'')+(dmap[s]?' hasd':'');
+    var cls='cell'+(d.getMonth()!==view.m?' out':'')+(s===td?' today':'')+(s===sel?' sel':'')+(dmap[s]?' hasd':'')+(holName(s)?' hol':'');
     var cell=h('div',{class:cls,'data-d':s});
     var top=h('div',{class:'top'},h('span',{class:'num'},''+d.getDate()));
     var tl=(S.todos[s]||[]);
@@ -578,6 +729,8 @@ function renderMonth(){
     }
     cell.appendChild(top);
     var box=h('div',{class:'items'});
+    if(holName(s))box.appendChild(h('div',{class:'it hol',title:holName(s)},h('span',{class:'tx'},holName(s).replace(/^대체공휴일.*$/,'대체휴일'))));
+    annOn(s).forEach(function(r){box.appendChild(h('div',{class:'it mark '+r.k,title:r.sub},h('span',{class:'tx'},r.icon+' '+(narrow&&r.short?r.short:r.text))))});
     eventsOn(s).forEach(function(e){box.appendChild(evNode(e,s))});
     tl.slice().sort(function(a,b){return (a.d?1:0)-(b.d?1:0)}).forEach(function(t){
       box.appendChild(todoNode(t));
@@ -615,7 +768,7 @@ function dayCard(d,dt,td,detail){
   var dow=dt.getDay();
   var card=h('div',{class:'day'+(d===td?' today':'')+(d===sel?' sel':''),'data-d':d});
   card.appendChild(h('div',{class:'dh'},
-    h('span',{class:'d'+(dow===0?' sun':dow===6?' sat':''),onclick:function(){selectDay(d)}},(dt.getMonth()+1)+'/'+dt.getDate()+' ('+DOW[dow]+')'),
+    h('span',{class:'d'+(dow===0||holName(d)?' sun':dow===6?' sat':''),onclick:function(){selectDay(d)}},(dt.getMonth()+1)+'/'+dt.getDate()+' ('+DOW[dow]+')'),
     d===td?h('span',{class:'badge'},'오늘'):null,
     h('span',{class:'sp'}),
     h('button',{class:'mini',title:'다이어리',onclick:function(){openDiary(d)}},(dEntry(d)&&dEntry(d).s)||'📖'),
@@ -623,6 +776,11 @@ function dayCard(d,dt,td,detail){
   ));
 
   var evs=eventsOn(d);
+  if(holName(d))card.appendChild(h('div',{class:'hday'},'🎌 '+holName(d)));
+  annOn(d).forEach(function(r){card.appendChild(h('div',{class:'aday '+r.k},r.icon+' '+r.text,h('small',{},r.sub)))});
+  if(d===sel||d===td)S.anns.forEach(function(a){   // 선택한 날/오늘: 기념일 며칠째
+    if(a.k==='ann'&&a.d&&d>=a.d&&!annOn(d).some(function(r){return r.a===a}))card.appendChild(h('div',{class:'aday ann'},'💕 '+a.t,h('small',{},(dayDiff(a.d,d)+1)+'일째')));
+  });
   evs.forEach(function(e){
     card.appendChild(h('div',{class:'ev',onclick:function(){openEv(e.id)}},
       h('span',{class:'bar',style:'background:'+evColor(e)}),
@@ -651,7 +809,7 @@ function dayCard(d,dt,td,detail){
       }},'✕')));
   });
 
-  if(!evs.length&&!tl.length)card.appendChild(h('div',{class:'empty'},'일정·할 일 없음'));
+  if(!evs.length&&!tl.length&&!holName(d)&&!annOn(d).length)card.appendChild(h('div',{class:'empty'},'일정·할 일 없음'));
 
   var cs=catSelect('tcat',lastTodoCat,'분류');
   cs.addEventListener('change',function(){lastTodoCat=cs.value});
@@ -1081,6 +1239,78 @@ function addCat(){
   touch();renderCats();renderAll();
 }
 
+
+/* ---------- 기념일 · 생일 관리 화면 ---------- */
+var annEditing=null;
+function annDday(date){var n=dayDiff(todayS(),date);return n===0?'오늘':n>0?'D-'+n:'D+'+(-n)}
+function renderAnns(){
+  var box=$('#annList');box.textContent='';
+  var td=todayS();
+  var rows=S.anns.map(function(a){return {a:a,nx:annNext(a,td)}}).sort(function(x,y){
+    return (x.nx?x.nx.date:'9999').localeCompare(y.nx?y.nx.date:'9999')||x.a.t.localeCompare(y.a.t)});
+  if(!rows.length)box.appendChild(h('div',{class:'empty',style:'padding:6px 2px 12px'},'아직 없어요. + 추가를 눌러 등록하세요'));
+  rows.forEach(function(r){
+    var a=r.a,lines=[];
+    if(a.k==='ann'){
+      lines.push(a.d+' 시작'+(a.d<=td?' · 오늘 기준 '+(dayDiff(a.d,td)+1)+'일째':' · 아직 시작 전'));
+    }else{
+      var la=solarToLunar(+a.d.slice(0,4),+a.d.slice(5,7),+a.d.slice(8,10));
+      lines.push(a.d+' (양력)'+(la?' = '+lunarLabel(la):'')+' · '+(a.rep?(a.cal==='lunar'?'음력 기준 매년':'양력 기준 매년'):'매년 표시 안 함'));
+    }
+    if(r.nx)lines.push('다음: '+r.nx.date+' ('+annDday(r.nx.date)+') '+r.nx.item.text+(a.k==='bday'?' · '+r.nx.item.sub:''));
+    var row=h('div',{class:'arow'},h('span',{class:'ai'},a.k==='bday'?'🎂':'💕'),
+      h('div',{class:'am'},h('b',{},a.t),h('div',{},lines.join('\n'))),
+      h('button',{class:'btn',onclick:function(){annEdit(a.id)}},'수정'));
+    row.querySelector('.am div').style.whiteSpace='pre-line';
+    box.appendChild(row);
+  });
+}
+function annKindUI(){
+  var b=$('#annK').value==='bday';
+  $('#annOptA').hidden=b;$('#annOptB').hidden=!b;
+  $('#annDL').textContent=b?'생일 (양력으로 입력)':'시작일';
+  annLunNote();
+}
+function annLunNote(){
+  var el=$('#annLun');el.textContent='';
+  if($('#annK').value!=='bday'||!$('#annD').value)return;
+  var v=$('#annD').value,L=solarToLunar(+v.slice(0,4),+v.slice(5,7),+v.slice(8,10));
+  el.textContent=L?'이 날짜는 '+lunarLabel(L)+(L.leap?' (윤달이라 다른 해에는 같은 숫자의 평달로 표시)':'')+'이에요':'음력 변환은 1901~2049년만 가능해요. 이 날짜는 양력으로 표시돼요';
+}
+function annShow(form){$('#annForm').hidden=!form;$('#annListWrap').hidden=form}
+function annEdit(id){
+  var a=id?S.anns.filter(function(x){return x.id===id})[0]:null;
+  annEditing=a?a.id:null;
+  $('#annK').value=a?a.k:'ann';
+  $('#annK').disabled=!!a;
+  $('#annT').value=a?a.t:'';
+  $('#annD').value=a?a.d:'';
+  $('#annRep').checked=a&&a.k==='ann'?!!a.rep:true;
+  $('#annH').checked=a&&a.k==='ann'?!!a.h:true;
+  $('#annCal').value=a&&a.cal==='lunar'?'lunar':'solar';
+  $('#annRepB').checked=a&&a.k==='bday'?!!a.rep:true;
+  $('#annDel').style.display=a?'':'none';
+  annKindUI();annShow(true);
+  $('#annT').focus();
+}
+function annSave(){
+  var t=$('#annT').value.trim(),d=$('#annD').value;
+  if(!t){toast('이름을 입력하세요');return}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){toast('날짜를 선택하세요');return}
+  var k=$('#annK').value,now=Date.now();
+  var item={id:annEditing||'a-'+uid(),k:k,t:t,d:d,u:now};
+  if(k==='ann'){item.rep=$('#annRep').checked;item.h=$('#annH').checked}
+  else{item.cal=$('#annCal').value;item.rep=$('#annRepB').checked}
+  S.anns=S.anns.filter(function(x){return x.id!==item.id});S.anns.push(item);
+  touch();renderAll();renderAnns();annShow(false);toast('저장했어요');
+}
+function annDelete(){
+  if(!annEditing)return;
+  if(!confirm('이 항목을 삭제할까요?'))return;
+  S.anns=S.anns.filter(function(x){return x.id!==annEditing});S.tomb[annEditing]=Date.now();
+  touch();renderAll();renderAnns();annShow(false);
+}
+
 /* ---------- backup ---------- */
 function download(name,text,type){
   try{
@@ -1158,7 +1388,8 @@ function mergeState(a,b){
     tomb:tomb,
     cats:mergeList(a.cats,b.cats).sort(function(x,y){return (x.o||0)-(y.o||0)||byId(x,y)}),
     memos:mergeList(a.memos,b.memos).sort(byId),
-    diary:mergeList(a.diary,b.diary).sort(byId)
+    diary:mergeList(a.diary,b.diary).sort(byId),
+    anns:mergeList(a.anns,b.anns).sort(byId)
   };
 }
 function canon(st){
@@ -1168,7 +1399,8 @@ function canon(st){
     x:st.tomb||{},
     c:(st.cats||[]).slice().sort(byId),
     m:(st.memos||[]).slice().sort(byId),
-    d:(st.diary||[]).slice().sort(byId)
+    d:(st.diary||[]).slice().sort(byId),
+    a:(st.anns||[]).slice().sort(byId)
   });
 }
 async function remoteGet(){
@@ -1222,13 +1454,13 @@ async function syncNow(){
     var changed=false;
     for(var i=0;i<4;i++){
       var rem=await remoteGet();
-      var merged=mergeState(S,rem.data||{events:[],todos:{},tomb:{},cats:[],memos:[],diary:[]});
+      var merged=mergeState(S,rem.data||{events:[],todos:{},tomb:{},cats:[],memos:[],diary:[],anns:[]});
       if(canon(merged)!==canon(S))changed=true;
-      S.events=merged.events;S.todos=merged.todos;S.tomb=merged.tomb;S.cats=merged.cats;S.memos=merged.memos;S.diary=merged.diary;
+      S.events=merged.events;S.todos=merged.todos;S.tomb=merged.tomb;S.cats=merged.cats;S.memos=merged.memos;S.diary=merged.diary;S.anns=merged.anns;
       if(!S.cats.length)S.cats=JSON.parse(JSON.stringify(DEFAULT_CATS));
       save();
       if(rem.data&&canon(merged)===canon(rem.data))break;   // 이미 같음
-      var res=await remotePut({events:S.events,todos:S.todos,tomb:S.tomb,cats:S.cats,memos:S.memos,diary:S.diary},rem.sha);
+      var res=await remotePut({events:S.events,todos:S.todos,tomb:S.tomb,cats:S.cats,memos:S.memos,diary:S.diary,anns:S.anns},rem.sha);
       if(res.ok)break;
       if(i===3)throw new Error('다른 기기와 저장이 계속 겹쳐요. 잠시 후 다시 시도해 주세요');
     }
@@ -1281,7 +1513,7 @@ function offSync(){
 /* ---------- wire up ---------- */
 function closeAll(){
   closeDiary();
-  ['#evOv','#helpOv','#syncOv','#catOv'].forEach(function(s){$(s).classList.remove('open')});
+  ['#evOv','#helpOv','#syncOv','#catOv','#annOv'].forEach(function(s){$(s).classList.remove('open')});
   $('#menu').classList.remove('open');
 }
 function bind(){
@@ -1293,7 +1525,7 @@ function bind(){
   $('#addEvBtn').onclick=function(){openEv(null,sel)};
   $('#evSave').onclick=saveEv;$('#evCancel').onclick=closeEv;$('#evDel').onclick=delEv;
   $('#evAll').onchange=syncAll;
-  ['#evOv','#helpOv','#syncOv','#catOv'].forEach(function(s){
+  ['#evOv','#helpOv','#syncOv','#catOv','#annOv'].forEach(function(s){
     $(s).addEventListener('mousedown',function(e){if(e.target===this)this.classList.remove('open')});
   });
   $('#diaryBtn').onclick=function(){openDiary(todayS())};
@@ -1319,6 +1551,12 @@ function bind(){
     }
   };
   document.addEventListener('click',function(){menu.classList.remove('open')});
+  $('#mAnn').onclick=function(){renderAnns();annShow(false);$('#annOv').classList.add('open')};
+  $('#annClose').onclick=function(){$('#annOv').classList.remove('open')};
+  $('#annAdd').onclick=function(){annEdit(null)};
+  $('#annCancel').onclick=function(){annShow(false)};
+  $('#annSave').onclick=annSave;$('#annDel').onclick=annDelete;
+  $('#annK').onchange=annKindUI;$('#annD').onchange=annLunNote;$('#annD').oninput=annLunNote;
   $('#mCats').onclick=function(){renderCats();$('#catOv').classList.add('open')};
   $('#catAdd').onclick=addCat;
   $('#catClose').onclick=function(){$('#catOv').classList.remove('open')};
@@ -1352,6 +1590,7 @@ function bind(){
         if(Array.isArray(o.cats)&&o.cats.length)S.cats=replaceList(S.cats,o.cats,t2);
         if(Array.isArray(o.memos))S.memos=replaceList(S.memos,o.memos,t2);
         if(Array.isArray(o.diary))S.diary=replaceList(S.diary,o.diary,t2);
+        if(Array.isArray(o.anns))S.anns=replaceList(S.anns,o.anns,t2);
         S.todos=o.todos;touch();renderAll();toast('백업을 불러왔어요');
       }catch(e){toast('올바른 백업 파일이 아니에요')}
       self.value='';
