@@ -279,6 +279,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
         <button id="mCats">카테고리 관리 (색상)</button>
         <hr>
         <button id="mSync">클라우드 동기화 설정 (GitHub)</button>
+        <button id="mCode">연결 코드 복사 (다른 기기용)</button>
         <button id="mHelp">앱 설치 방법</button>
         <hr>
         <button id="mExport">백업 내려받기 (.json)</button>
@@ -437,6 +438,8 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
       GitHub의 <b>비공개(Private) 저장소</b> 하나에 데이터 파일을 저장해서 폰·PC가 같은 내용을 봅니다.
       토큰은 <b>이 기기 브라우저에만</b> 저장돼요.
     </div>
+    <label>연결 코드 (다른 기기에서 복사한 것)</label><input type="text" id="syCode" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="KJD1.… 붙여넣으면 아래 칸이 자동으로 채워져요">
+    <button class="btn" id="syCopy" style="margin-top:8px;display:none">📋 이 기기의 연결 코드 복사 (다른 기기용)</button>
     <label>GitHub 아이디(또는 조직)</label><input type="text" id="syOwner" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="예: pathflow">
     <label>데이터 저장소 이름</label><input type="text" id="syRepo" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="예: scheduler-data">
     <label>파일 경로</label><input type="text" id="syPath" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="data.json">
@@ -1173,6 +1176,11 @@ function photoURL(id){
   return (c.api||'https://api.github.com')+'/repos/'+encodeURIComponent(c.owner)+'/'+encodeURIComponent(c.repo)+'/contents/photos/'+encodeURIComponent(id)+(c.branch?'?ref='+encodeURIComponent(c.branch):'');
 }
 var photoMiss={};
+var photoRunning=false;
+function photoBg(){
+  if(photoRunning)return;photoRunning=true;
+  photoSync().then(function(ch){if(ch)refreshDiary()}).catch(function(){}).then(function(){photoRunning=false});
+}
 async function photoSync(){
   try{
     if(!(await pOpen()))return false;
@@ -1183,14 +1191,14 @@ async function photoSync(){
       for(var qi=0;qi<q.length;qi++){
         var did=q[qi];
         if(need[did])continue;   // 다시 쓰이는 사진이면 건드리지 않음
-        var m=await fetch(photoURL(did),{headers:hdrs(),cache:'no-store'});
+        var m=await tfetch(photoURL(did),{headers:hdrs(),cache:'no-store'},40000);
         if(m.status===404)continue;   // 이미 없음
         if(m.status===401||m.status===403){left.push(did);left=left.concat(q.slice(qi+1));break}
         if(!m.ok){left.push(did);continue}
         var meta=await m.json();
         var dbody={message:'delete photo',sha:meta.sha};
         if(sync.cfg.branch)dbody.branch=sync.cfg.branch;
-        var dr=await fetch(photoURL(did),{method:'DELETE',headers:hdrs({'Content-Type':'application/json'}),body:JSON.stringify(dbody)});
+        var dr=await tfetch(photoURL(did),{method:'DELETE',headers:hdrs({'Content-Type':'application/json'}),body:JSON.stringify(dbody)});
         if(!dr.ok&&dr.status!==404&&dr.status!==422)left.push(did);
       }
       setQ(left);
@@ -1203,12 +1211,12 @@ async function photoSync(){
         if(v.up===0){   // 아직 못 올린 사진 올리기
           var body={message:'photo',content:await blobB64(v.b)};
           if(sync.cfg.branch)body.branch=sync.cfg.branch;
-          var r=await fetch(photoURL(id),{method:'PUT',headers:hdrs({'Content-Type':'application/json'}),body:JSON.stringify(body)});
+          var r=await tfetch(photoURL(id),{method:'PUT',headers:hdrs({'Content-Type':'application/json'}),body:JSON.stringify(body)});
           if(r.ok||r.status===422){await pPut(id,{b:v.b,up:1})}
           else if(r.status===401||r.status===403)return changed;
         }
       }else if(!photoMiss[id]||Date.now()-photoMiss[id]>5*60*1000){   // 다른 기기에서 올린 사진 받기
-        var g=await fetch(photoURL(id),{headers:hdrs({'Accept':'application/vnd.github.raw+json'}),cache:'no-store'});
+        var g=await tfetch(photoURL(id),{headers:hdrs({'Accept':'application/vnd.github.raw+json'}),cache:'no-store'},60000);
         if(g.ok){await pPut(id,{b:await g.blob(),up:1});changed=true;delete photoMiss[id]}
         else photoMiss[id]=Date.now();
       }
@@ -1331,6 +1339,11 @@ var SYNC_KEY='scheduler-sync-v1';
 var sync={cfg:null,busy:false,again:false,timer:null,pendingRender:false};
 function loadCfg(){try{sync.cfg=JSON.parse(localStorage.getItem(SYNC_KEY)||'null')}catch(e){sync.cfg=null}}
 function cfgOK(){var c=sync.cfg;return !!(c&&c.owner&&c.repo&&c.token)}
+function tfetch(url,opt,ms){   // 응답이 없으면 계속 기다리지 않고 끊음
+  var ctl=typeof AbortController!=='undefined'?new AbortController():null,tm=null;
+  opt=opt||{};if(ctl){opt.signal=ctl.signal;tm=setTimeout(function(){ctl.abort()},ms||25000)}
+  return fetch(url,opt).then(function(r){clearTimeout(tm);return r},function(e){clearTimeout(tm);if(e&&e.name==='AbortError'){var x=new Error('GitHub 응답이 너무 늦어요. 인터넷 상태를 확인하고 다시 시도해 주세요');x.timeout=true;throw x}throw e});
+}
 function b64enc(s){return btoa(unescape(encodeURIComponent(s)))}
 function b64dec(s){return decodeURIComponent(escape(atob(s.replace(/\s/g,''))))}
 function fileURL(withRef){
@@ -1404,13 +1417,13 @@ function canon(st){
   });
 }
 async function remoteGet(){
-  var r=await fetch(fileURL(true),{headers:hdrs(),cache:'no-store'});
+  var r=await tfetch(fileURL(true),{headers:hdrs(),cache:'no-store'});
   if(r.status===404)return {sha:null,data:null};
   if(!r.ok)throw httpErr(r.status);
   var j=await r.json(),txt;
   if(j.encoding==='base64'&&j.content)txt=b64dec(j.content);
   else{
-    var r2=await fetch(fileURL(true),{headers:hdrs({'Accept':'application/vnd.github.raw+json'}),cache:'no-store'});
+    var r2=await tfetch(fileURL(true),{headers:hdrs({'Accept':'application/vnd.github.raw+json'}),cache:'no-store'});
     if(!r2.ok)throw httpErr(r2.status);
     txt=await r2.text();
   }
@@ -1425,7 +1438,7 @@ async function remotePut(obj,sha){
   var body={message:'sync '+new Date().toISOString(),content:b64enc(JSON.stringify(obj))};
   if(sha)body.sha=sha;
   if(sync.cfg.branch)body.branch=sync.cfg.branch;
-  var r=await fetch(fileURL(false),{method:'PUT',headers:hdrs({'Content-Type':'application/json'}),body:JSON.stringify(body)});
+  var r=await tfetch(fileURL(false),{method:'PUT',headers:hdrs({'Content-Type':'application/json'}),body:JSON.stringify(body)});
   if(r.ok)return {ok:true};
   if(r.status===409||r.status===422)return {ok:false,conflict:true};   // 그 사이 다른 기기가 먼저 저장함 → 다시 병합
   throw httpErr(r.status);
@@ -1464,8 +1477,7 @@ async function syncNow(){
       if(res.ok)break;
       if(i===3)throw new Error('다른 기기와 저장이 계속 겹쳐요. 잠시 후 다시 시도해 주세요');
     }
-    var pch=await photoSync();
-    if(pch)refreshDiary();
+    photoBg();   // 사진은 뒤에서 따로 맞춤 (연결 확인이 오래 걸리지 않게)
     setStatus('ok');
     if(changed){if(listBusy())sync.pendingRender=true;else renderAll()}
   }catch(e){
@@ -1478,11 +1490,27 @@ async function syncNow(){
   }
   return result;
 }
+function cfgCode(){var c=sync.cfg;if(!cfgOK())return '';return 'KJD1.'+b64enc(JSON.stringify({o:c.owner,r:c.repo,p:c.path||'data.json',t:c.token}))}
+function parseCode(s){
+  s=(s||'').trim().replace(/\s+/g,'');
+  if(s.indexOf('KJD1.')!==0)return null;
+  try{var o=JSON.parse(b64dec(s.slice(5)));return (o&&o.o&&o.r&&o.t)?o:null}catch(e){return null}
+}
+function copyText(txt,okMsg){
+  var done=function(){toast(okMsg)};
+  try{navigator.clipboard.writeText(txt).then(done,function(){fallbackCopy(txt,okMsg)})}catch(e){fallbackCopy(txt,okMsg)}
+}
+function fallbackCopy(txt,okMsg){
+  var ta=h('textarea',{style:'position:fixed;left:-999px;top:0'});ta.value=txt;document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');toast(okMsg)}catch(e){prompt('아래 내용을 복사하세요',txt)}
+  ta.remove();
+}
 function openSync(){
   var c=sync.cfg||{};
   $('#syOwner').value=c.owner||'';$('#syRepo').value=c.repo||'';
   $('#syPath').value=c.path||'data.json';$('#syToken').value=c.token||'';
-  $('#syMsg').textContent='';
+  $('#syMsg').textContent='';$('#syCode').value='';
+  $('#syCopy').style.display=cfgOK()?'':'none';
   $('#syncOv').classList.add('open');
 }
 async function saveSync(){
@@ -1624,6 +1652,17 @@ function bind(){
   };
   $('#syncBtn').addEventListener('contextmenu',function(e){e.preventDefault();openSync()});
   $('#mSync').onclick=openSync;
+  $('#mCode').onclick=function(){
+    if(!cfgOK()){toast('먼저 클라우드 동기화를 연결하세요');return}
+    copyText(cfgCode(),'연결 코드를 복사했어요. 본인에게만 보내서 붙여넣으세요');
+  };
+  $('#syCopy').onclick=function(){copyText(cfgCode(),'연결 코드를 복사했어요. 본인에게만 보내서 붙여넣으세요')};
+  $('#syCode').addEventListener('input',function(){
+    var o=parseCode(this.value);if(!this.value.trim())return;
+    if(o){$('#syOwner').value=o.o;$('#syRepo').value=o.r;$('#syPath').value=o.p||'data.json';$('#syToken').value=o.t;
+      $('#syMsg').textContent='연결 코드를 불러왔어요. "저장하고 연결"을 눌러 주세요'}
+    else $('#syMsg').textContent='연결 코드 형식이 아니에요 (KJD1. 로 시작해야 해요)';
+  });
   $('#sySave').onclick=saveSync;$('#syOff').onclick=offSync;
   $('#syCancel').onclick=function(){$('#syncOv').classList.remove('open')};
   document.addEventListener('focusout',function(){
