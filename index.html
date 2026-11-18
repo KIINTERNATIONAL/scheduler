@@ -259,6 +259,21 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
   .grid{grid-template-rows:repeat(6,108px)}
   header{padding:8px 10px}
 }
+/*CYCLE*/
+.cyb{position:absolute;left:0;right:0;top:0;height:4px;pointer-events:none}
+.cyb.p{background:#e8618c}
+.cyb.pp{background:repeating-linear-gradient(90deg,#f4a3bb 0 5px,transparent 5px 8px)}
+.cyb.f{background:#9fd0f3}
+.cyb.ovl{background:#3d8fe3}
+.it.cy.p{color:#c2185b;background:rgba(232,97,140,.14)}
+.it.cy.pp{color:#d6457a;background:rgba(244,163,187,.22)}
+.it.cy.ovl{color:#1565c0;background:rgba(61,143,227,.14)}
+.aday.cy.p{color:#d81b60}.aday.cy.pp{color:#e0457b}.aday.cy.f{color:#2b7bd0}.aday.cy.ovl{color:#1565c0}
+@media (prefers-color-scheme:dark){.it.cy.p{color:#f48fb1}.it.cy.pp{color:#f6a5c0}.it.cy.ovl{color:#90caf9}.aday.cy.p{color:#f48fb1}.aday.cy.pp{color:#f6a5c0}.aday.cy.f{color:#90caf9}.aday.cy.ovl{color:#90caf9}}
+.cyleg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--sub);margin-top:8px}
+.cyleg i{display:inline-block;width:14px;height:5px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.it.sh{font-weight:600}.ev.sh .tt small{font-size:calc(12px*var(--hs))}
+/*/CYCLE*/
 </style>
 </head>
 <body>
@@ -278,6 +293,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
       <button class="btn icon" id="menuBtn" aria-label="메뉴">⋯</button>
       <div class="menu" id="menu">
         <button id="mAnn">기념일 · 생일 관리</button>
+        <!--CYCLE--><button id="mCy">🌸 생리주기</button><button id="mSh">🤝 상대와 공유</button><!--/CYCLE-->
         <button id="mCats">카테고리 관리 (색상)</button>
         <hr>
         <button id="mSync">클라우드 동기화 설정 (GitHub)</button>
@@ -316,6 +332,66 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
   </main>
 </div>
 
+<!--CYCLE-->
+<div class="ov" id="cyOv">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h2>🌸 생리주기</h2>
+    <label>이 앱에서는</label>
+    <select id="cyMode"><option value="off">사용 안 함</option><option value="self">직접 기록하기 (내 주기)</option><option value="partner">상대 주기 보기 (읽기 전용)</option></select>
+    <div id="cySelf" hidden>
+      <div class="note" id="cyStat" style="margin-top:10px;white-space:pre-line"></div>
+      <div class="row" style="margin-top:6px">
+        <div><label>시작일</label><input type="date" id="cyS"></div>
+        <div><label>종료일 (모르면 비워요)</label><input type="date" id="cyE"></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn primary" id="cyAdd">기록 저장</button>
+        <button class="btn" id="cyToday">오늘 시작</button>
+        <button class="btn" id="cyEndToday">오늘 끝</button>
+        <button class="btn" id="cyFormCancel" hidden>수정 취소</button>
+      </div>
+      <div id="cyList" style="margin-top:6px"></div>
+      <div class="note" id="cyShareNote" style="margin-top:8px"></div>
+    </div>
+    <div id="cyPartner" hidden>
+      <div class="note" style="margin-top:10px">상대가 공유한 주기를 보여 줘요. 연결은 ⋯ → 🤝 상대와 공유에서 해요.</div>
+      <div style="display:flex;gap:6px;margin-top:10px"><button class="btn" id="cyReload">지금 불러오기</button></div>
+      <div class="note" id="cyPStat" style="margin-top:10px;white-space:pre-line"></div>
+    </div>
+    <div class="cyleg"><span><i style="background:#e8618c"></i>생리</span><span><i style="background:repeating-linear-gradient(90deg,#f4a3bb 0 5px,transparent 5px 8px)"></i>생리 예정</span><span><i style="background:#9fd0f3"></i>가임기(예상)</span><span><i style="background:#3d8fe3"></i>배란 예정일</span></div>
+    <div class="note" style="margin-top:8px">예측은 기록한 주기의 평균으로 계산한 추정이에요. 주기가 불규칙하면 많이 달라질 수 있고, 피임이나 임신 판단용으로는 정확하지 않아요.</div>
+    <div class="mfoot"><div class="sp"></div><button class="btn primary" id="cyClose">닫기</button></div>
+  </div>
+</div>
+<!--/CYCLE-->
+<!--CYCLE-->
+<div class="ov" id="shOv">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h2>🤝 상대와 공유</h2>
+    <div class="note" style="margin-bottom:6px">일정을 만들 때 "상대에게 공유"를 켠 것만 상대 달력에 보여요. 나머지는 나만 봐요. 상대가 공유한 일정은 보라색으로 떠요 (읽기 전용).</div>
+    <label>이 앱의 주인</label>
+    <select id="shMe"><option value="">선택 안 함</option><option value="siyun">시윤</option><option value="harry">해리</option></select>
+    <div id="shSi" hidden>
+      <label>공유 상자 연결 코드 (해리 앱에서 복사)</label>
+      <input type="text" id="shCode" placeholder="KJD1. 로 시작하는 코드" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div style="display:flex;gap:6px;margin-top:10px"><button class="btn primary" id="shConnect">연결</button><button class="btn danger" id="shDisc">연결 해제</button></div>
+    </div>
+    <div id="shHa" hidden><div class="note" style="margin-top:10px">해리 앱은 ☁ 동기화 저장소를 공유 상자로 써요. 동기화를 먼저 연결해 주세요.</div></div>
+    <div class="note" id="shStat" style="margin-top:10px;white-space:pre-line"></div>
+    <div style="display:flex;gap:6px;margin-top:10px"><button class="btn" id="shNow">지금 주고받기</button></div>
+    <div class="mfoot"><div class="sp"></div><button class="btn primary" id="shClose">닫기</button></div>
+  </div>
+</div>
+<div class="ov" id="shvOv">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h2 id="shvH">공유된 일정</h2>
+    <div style="font-size:17px;font-weight:700;margin-top:6px" id="shvT"></div>
+    <div class="note" id="shvW" style="margin-top:6px"></div>
+    <div class="vnote" id="shvN" style="min-height:0;margin-top:10px"></div>
+    <div class="mfoot"><div class="sp"></div><button class="btn primary" id="shvClose">닫기</button></div>
+  </div>
+</div>
+<!--/CYCLE-->
 <!-- event modal -->
 <div class="ov" id="evOv">
   <div class="modal" role="dialog" aria-modal="true">
@@ -334,6 +410,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px;
     </div>
     <label>메모</label>
     <textarea id="evNote" placeholder="장소, 메모 등"></textarea>
+    <!--CYCLE--><label class="chk" id="evShWrap" hidden><input type="checkbox" id="evSh"> 🤝 <span id="evShName">상대</span>에게 이 일정 공유</label><!--/CYCLE-->
     <div class="mfoot">
       <button class="btn danger" id="evDel">삭제</button>
       <div class="sp"></div>
@@ -496,12 +573,12 @@ function todayS(){return ds(new Date())}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 
 /* ---------- state ---------- */
-var S={events:[],todos:{},tomb:{},cats:[],memos:[],diary:[],anns:[]};   // tomb: 삭제한 항목 id -> 삭제 시각 (동기화 때 부활 방지)
+var S={events:[],todos:{},tomb:{},cats:[],memos:[],diary:[],anns:[],cycle:[]};   // tomb: 삭제한 항목 id -> 삭제 시각 (동기화 때 부활 방지)
 var storageOK=true,migrated=false;
 function load(){
   try{
     var r=localStorage.getItem(KEY);
-    if(r){var o=JSON.parse(r);S.events=o.events||[];S.todos=o.todos||{};S.tomb=o.tomb||{};S.cats=o.cats||[];S.memos=o.memos||[];S.diary=o.diary||[];S.anns=o.anns||[]}
+    if(r){var o=JSON.parse(r);S.events=o.events||[];S.todos=o.todos||{};S.tomb=o.tomb||{};S.cats=o.cats||[];S.memos=o.memos||[];S.diary=o.diary||[];S.anns=o.anns||[];S.cycle=o.cycle||[]}
   }catch(e){storageOK=false}
   if(!S.cats.length)S.cats=JSON.parse(JSON.stringify(DEFAULT_CATS));
   S.events.forEach(function(e){if(!e.u)e.u=1});
@@ -516,13 +593,14 @@ function load(){
   S.memos.forEach(function(m){if(!m.d){m.d=ds(new Date(m.u>1?m.u:Date.now()));m.u=Date.now()}});   // 예전 메모는 작성한 날짜로 붙임
   S.diary.forEach(function(m){if(!m.u)m.u=1});
   S.anns.forEach(function(m){if(!m.u)m.u=1});
+  S.cycle.forEach(function(m){if(!m.u)m.u=1});
   for(var d in S.todos)S.todos[d].forEach(function(t){if(!t.u)t.u=1});
 }
 function save(){
   try{localStorage.setItem(KEY,JSON.stringify(S))}
   catch(e){if(storageOK){storageOK=false;toast('이 환경에서는 저장이 안 돼요. 새로고침하면 사라집니다.')}}
 }
-function touch(){save();scheduleSync(1500)}   // 사용자가 바꿨을 때: 저장 + 곧 동기화
+function touch(){save();scheduleSync(1500);/*CYCLE*/shPushSoon();/*/CYCLE*/}   // 사용자가 바꿨을 때: 저장 + 곧 동기화
 var sel=todayS();
 var view={y:parse(sel).getFullYear(),m:parse(sel).getMonth()};
 var lastTodoCat='',lastEvCat='c-work';
@@ -698,11 +776,11 @@ function isNarrow(){return window.innerWidth<=700}
 function evNode(e,d){
   var c=evColor(e),el;
   if(e.allDay||isNarrow()){
-    el=h('div',{class:'it all',style:'background:'+c+';color:'+inkOn(c)},h('span',{class:'tx'},e.title));
+    el=h('div',{class:'it all',style:'background:'+c+';color:'+inkOn(c)},h('span',{class:'tx'},e.title/*CYCLE*/+(e.sh?' 🤝':'')/*/CYCLE*/));
   }else{
     el=h('div',{class:'it timed'},
       h('span',{class:'dot',style:'background:'+c}),
-      h('span',{class:'tx'},((e.date===d&&e.start)?e.start+' ':'')+e.title));
+      h('span',{class:'tx'},((e.date===d&&e.start)?e.start+' ':'')+e.title/*CYCLE*/+(e.sh?' 🤝':'')/*/CYCLE*/));
   }
   el.addEventListener('click',function(ev){ev.stopPropagation();openEv(e.id)});
   return el;
@@ -749,7 +827,9 @@ function renderMonth(){
     var box=h('div',{class:'items'});
     if(holName(s))box.appendChild(h('div',{class:'it hol',title:holName(s)},h('span',{class:'tx'},holName(s).replace(/^대체공휴일.*$/,'대체휴일'))));
     annOn(s).forEach(function(r){box.appendChild(h('div',{class:'it mark '+r.k,title:r.sub},h('span',{class:'tx'},r.icon+' '+(narrow&&r.short?r.short:r.text))))});
+    /*CYCLE*/cyCell(s,cell,box);/*/CYCLE*/
     eventsOn(s).forEach(function(e){box.appendChild(evNode(e,s))});
+    /*CYCLE*/shCell(s,box);/*/CYCLE*/
     tl.slice().sort(function(a,b){return (a.d?1:0)-(b.d?1:0)}).forEach(function(t){
       box.appendChild(todoNode(t));
     });
@@ -796,6 +876,7 @@ function dayCard(d,dt,td,detail){
   var evs=eventsOn(d);
   if(holName(d))card.appendChild(h('div',{class:'hday'},'🎌 '+holName(d)));
   annOn(d).forEach(function(r){card.appendChild(h('div',{class:'aday '+r.k},r.icon+' '+r.text,h('small',{},r.sub)))});
+  /*CYCLE*/cyOn(d).forEach(function(r){card.appendChild(h('div',{class:'aday cy '+r.k},r.text,h('small',{},r.sub)))});/*/CYCLE*/
   if(d===sel||d===td)S.anns.forEach(function(a){   // 선택한 날/오늘: 기념일 며칠째
     if(a.k==='ann'&&a.d&&d>=a.d&&!annOn(d).some(function(r){return r.a===a}))card.appendChild(h('div',{class:'aday ann'},'💕 '+a.t,h('small',{},(dayDiff(a.d,d)+1)+'일째')));
   });
@@ -803,10 +884,11 @@ function dayCard(d,dt,td,detail){
     card.appendChild(h('div',{class:'ev',onclick:function(){openEv(e.id)}},
       h('span',{class:'bar',style:'background:'+evColor(e)}),
       h('span',{class:'tm'},timeLabel(e,d)),
-      h('span',{class:'tt'},e.title,
+      h('span',{class:'tt'},e.title/*CYCLE*/+(e.sh?' 🤝':'')/*/CYCLE*/,
         detail&&e.note?h('div',{class:'enote'},e.note):null)));
   });
 
+  /*CYCLE*/shCard(d,card,detail);/*/CYCLE*/
   var tl=S.todos[d]||[];
   tl.forEach(function(t){
     var cb=h('input',{type:'checkbox'});cb.checked=!!t.d;
@@ -906,7 +988,7 @@ function setMemoOpen(open){
   setPref('scheduler-memo-open',open?'1':'0');
 }
 
-function renderAll(){renderMonth();renderWeek();renderMemos()}
+function renderAll(){/*CYCLE*/cyInv();/*/CYCLE*/renderMonth();renderWeek();renderMemos()}
 function selectDay(d){
   var a=document.activeElement;if(a&&a.blur&&a.tagName==='TEXTAREA')a.blur();
   sel=d;var dt=parse(d);view={y:dt.getFullYear(),m:dt.getMonth()};renderAll();
@@ -930,6 +1012,7 @@ function openEv(id,date){
   $('#evStart').value=e?(e.start||''):'09:00';
   $('#evEnd').value=e?(e.end||''):'10:00';
   $('#evNote').value=e?(e.note||''):'';
+  /*CYCLE*/shEvUI(e);/*/CYCLE*/
   $('#evDel').style.display=e?'':'none';
   syncAll();
   $('#evOv').classList.add('open');
@@ -951,6 +1034,7 @@ function saveEv(){
     cat:cat,
     color:cat?catColor(cat):(old&&old.color)||FALLBACK,
     note:$('#evNote').value.trim(),
+    /*CYCLE*/sh:$('#evShWrap').hidden?!!(old&&old.sh):$('#evSh').checked,/*/CYCLE*/
     u:Date.now()
   };
   if(cat)lastEvCat=cat;
@@ -1378,6 +1462,316 @@ function replaceList(cur,incoming,t){
   return incoming;
 }
 
+/*CYCLE*/
+/* ---------- 상대와 공유 (일정 · 생리주기) ---------- */
+/* 공유 상자 = GitHub 저장소 하나. 각자 자기 몫만 from-<이름>.json 으로 올리고, 상대 것은 읽기만 한다. */
+var SH_KEY='scheduler-share-v1',SH_CACHE='scheduler-share-cache-v1',CY_KEY='scheduler-cycle-v1',SH_COLOR='#9b6fd6';
+var SH_NAMES={siyun:'시윤',harry:'해리'};
+var sh={me:'',box:null,cache:{events:[],cycle:[],at:0},err:'',msg:'',pulling:false,pushing:false,pushed:'',timer:null};
+var cy={mode:'off',editId:null};
+var cyMC=null,CY_RANK={f:1,ovl:2,pp:3,p:4};
+function shOther(){return sh.me==='siyun'?'harry':sh.me==='harry'?'siyun':''}
+function shName(){return SH_NAMES[shOther()]||'상대'}
+function cyLoad(){
+  try{var o=JSON.parse(localStorage.getItem(CY_KEY)||'null');if(o)cy.mode=o.mode||'off'}catch(e){}
+  try{var q=JSON.parse(localStorage.getItem(SH_KEY)||'null');if(q){sh.me=q.me||'';sh.box=q.box||null}}catch(e){}
+  try{var c=JSON.parse(localStorage.getItem(SH_CACHE)||'null');if(c)sh.cache={events:Array.isArray(c.events)?c.events:[],cycle:Array.isArray(c.cycle)?c.cycle:[],at:c.at||0}}catch(e){}
+}
+function cySaveCfg(){try{localStorage.setItem(CY_KEY,JSON.stringify({mode:cy.mode}))}catch(e){}}
+function shSaveCfg(){try{localStorage.setItem(SH_KEY,JSON.stringify({me:sh.me,box:sh.box}))}catch(e){}}
+function shBox(){   // 공유 상자 접속 정보 (해리 앱은 자기 동기화 저장소를 그대로 씀)
+  if(sh.box)return {owner:sh.box.o,repo:sh.box.r,token:sh.box.t,api:sh.box.api,branch:sh.box.b};
+  if(sh.me==='harry'&&cfgOK())return sync.cfg;
+  return null;
+}
+function shReady(){return !!(sh.me&&shBox())}
+function shURL(b,file,ref){
+  return (b.api||'https://api.github.com')+'/repos/'+encodeURIComponent(b.owner)+'/'+encodeURIComponent(b.repo)+'/contents/'+file+(ref&&b.branch?'?ref='+encodeURIComponent(b.branch):'');
+}
+function shHdr(b,extra){var o={'Authorization':'Bearer '+b.token,'Accept':'application/vnd.github+json'};for(var k in extra)o[k]=extra[k];return o}
+function shTime(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}
+
+/* --- 내 몫 올리기 --- */
+function cyAfterSync(){shPushSoon()}
+function shPushSoon(){if(!shReady())return;clearTimeout(sh.timer);sh.timer=setTimeout(shPush,2000)}
+function shMine(){
+  var evs=S.events.filter(function(e){return e.sh}).map(function(e){return {id:e.id,title:e.title,date:e.date,endDate:e.endDate||'',allDay:!!e.allDay,start:e.start||'',end:e.end||'',note:e.note||'',u:e.u||0}}).sort(byId);
+  var cyc=cy.mode==='self'?S.cycle.map(function(x){return {id:x.id,s:x.s,e:x.e||'',u:x.u||0}}).sort(byId):[];
+  return {events:evs,cycle:cyc};
+}
+async function shPush(){
+  var b=shBox();
+  if(!b||!sh.me||sh.pushing)return;
+  sh.pushing=true;
+  try{
+    var mine=shMine(),key=stable({e:mine.events,c:mine.cycle});
+    if(key===sh.pushed)return;
+    var file='from-'+sh.me+'.json',sha=null,g=await tfetch(bust(shURL(b,file,true)),{headers:shHdr(b)});
+    if(g.ok){
+      var j=await g.json();sha=j.sha;
+      try{var old=JSON.parse(b64dec(j.content));if(stable({e:(old.events||[]).slice().sort(byId),c:(old.cycle||[]).slice().sort(byId)})===key){sh.pushed=key;return}}catch(e){}
+    }else if(g.status!==404)throw httpErr(g.status);
+    var body={message:'share '+new Date().toISOString(),content:b64enc(JSON.stringify({events:mine.events,cycle:mine.cycle,at:Date.now()}))};
+    if(sha)body.sha=sha;if(b.branch)body.branch=b.branch;
+    var p=await tfetch(shURL(b,file,false),{method:'PUT',headers:shHdr(b,{'Content-Type':'application/json'}),body:JSON.stringify(body)});
+    if(p.ok){sh.pushed=key;sh.msg='내 공유 올림 '+shTime()+' (일정 '+mine.events.length+'개'+(cy.mode==='self'?' · 주기 기록 '+mine.cycle.length+'건':'')+')'}
+    else if(p.status===409||p.status===422){sh.timer=setTimeout(shPush,1500)}   // 그 사이 바뀜 → 곧 다시
+    else throw httpErr(p.status);
+  }catch(e){sh.msg='공유 올리기 실패: '+((e&&e.message)||'알 수 없는 오류')}
+  finally{sh.pushing=false;shRefreshUI()}
+}
+/* --- 상대 몫 읽기 (읽기 전용, 저장해 두고 오프라인에서도 보임) --- */
+async function shPull(){
+  var b=shBox();
+  if(!b||!shOther()||sh.pulling)return;
+  sh.pulling=true;
+  try{
+    var r=await tfetch(bust(shURL(b,'from-'+shOther()+'.json',true)),{headers:shHdr(b)});
+    var d={events:[],cycle:[]};
+    if(r.status!==404){
+      if(!r.ok)throw httpErr(r.status);
+      var j=await r.json(),o=JSON.parse(b64dec(j.content));
+      d.events=(Array.isArray(o.events)?o.events:[]).filter(function(e){return e&&e.date&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)});
+      d.cycle=(Array.isArray(o.cycle)?o.cycle:[]).filter(function(x){return x&&/^\d{4}-\d{2}-\d{2}$/.test(x.s)});
+    }
+    var was=stable(sh.cache.events)+stable(sh.cache.cycle),now2=stable(d.events)+stable(d.cycle);
+    sh.cache={events:d.events,cycle:d.cycle,at:Date.now()};sh.err='';
+    try{localStorage.setItem(SH_CACHE,JSON.stringify(sh.cache))}catch(e){}
+    if(was!==now2){cyInv();renderMonth();renderWeek()}
+  }catch(e){
+    sh.err=(e instanceof TypeError)?'인터넷에 연결할 수 없어요 (저장해 둔 내용을 보여 줘요)':((e&&e.message)||'불러오기 실패');
+  }finally{sh.pulling=false;shRefreshUI()}
+}
+/* --- 상대가 공유한 일정 표시 --- */
+function shEvOn(d){
+  return (sh.cache.events||[]).filter(function(e){return d>=e.date&&d<=(e.endDate||e.date)}).sort(function(a,b){
+    if(!!a.allDay!==!!b.allDay)return a.allDay?-1:1;
+    return (a.start||'').localeCompare(b.start||'')||(a.title||'').localeCompare(b.title||'');
+  });
+}
+function shNode(e,d){
+  var nm=shName(),tm=(!isNarrow()&&!e.allDay&&e.date===d&&e.start)?e.start+' ':'';
+  var el=h('div',{class:'it all sh',style:'background:'+SH_COLOR+';color:#fff',title:nm+' · '+e.title},h('span',{class:'tx'},tm+(isNarrow()?nm.slice(0,1):nm)+'·'+e.title));
+  el.addEventListener('click',function(ev){ev.stopPropagation();shView(e)});
+  return el;
+}
+function shCell(s,box){shEvOn(s).forEach(function(e){box.appendChild(shNode(e,s))})}
+function shCard(d,card,detail){
+  shEvOn(d).forEach(function(e){
+    card.appendChild(h('div',{class:'ev sh',onclick:function(){shView(e)}},
+      h('span',{class:'bar',style:'background:'+SH_COLOR}),
+      h('span',{class:'tm'},e.allDay?'종일':(e.date!==d?'계속':e.start||'')),
+      h('span',{class:'tt'},h('small',{style:'color:'+SH_COLOR+';font-weight:700;font-family:inherit'},shName()+' '),e.title,
+        detail&&e.note?h('div',{class:'enote'},e.note):null)));
+  });
+}
+function shView(e){
+  $('#shvH').textContent=shName()+'님이 공유한 일정';
+  $('#shvT').textContent=e.title||'(제목 없음)';
+  var w=e.date+(e.endDate&&e.endDate>e.date?' ~ '+e.endDate:'');
+  w+=e.allDay?' · 종일':(e.start?' · '+e.start+(e.end?' ~ '+e.end:''):'');
+  $('#shvW').textContent=w;$('#shvN').textContent=e.note||'';
+  $('#shvOv').classList.add('open');
+}
+function shEvUI(e){   // 일정 창의 "상대에게 공유" 체크박스
+  var ok=shReady();
+  $('#evShWrap').hidden=!ok;
+  if(ok){$('#evShName').textContent=shName();$('#evSh').checked=!!(e&&e.sh)}
+}
+/* --- 공유 설정 창 --- */
+function shRefreshUI(){
+  if($('#shOv').classList.contains('open'))shUI();
+  if($('#cyOv').classList.contains('open'))cyUI();
+}
+function shUI(inputs){
+  $('#shMe').value=sh.me;
+  $('#shSi').hidden=sh.me!=='siyun';$('#shHa').hidden=sh.me!=='harry';
+  if(inputs)$('#shCode').value='';
+  $('#shCode').placeholder=sh.box?'연결됨 (바꾸려면 새 코드를 붙여넣어요)':'KJD1. 로 시작하는 코드';
+  var L=[];
+  if(!sh.me)L.push('이 앱의 주인을 먼저 골라 주세요.');
+  else if(!shBox())L.push(sh.me==='harry'?'☁ 동기화를 먼저 연결해 주세요 (그 저장소가 공유 상자가 돼요).':'해리 앱의 ⋯ → 연결 코드 복사로 만든 코드를 붙여넣고 연결을 눌러 주세요.');
+  else{
+    L.push('공유 상자 연결됨 · 상대: '+shName());
+    if(sh.msg)L.push(sh.msg);
+    L.push(sh.err?'⚠ '+sh.err:(sh.cache.at?'상대 내용 확인 '+new Date(sh.cache.at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+' (일정 '+sh.cache.events.length+'개'+(sh.cache.cycle.length?' · 주기 기록 '+sh.cache.cycle.length+'건':'')+')':'아직 확인 전이에요'));
+  }
+  $('#shStat').textContent=L.join('\n');
+}
+function shConnect(){
+  var o=parseCode($('#shCode').value);
+  if(!o){toast('연결 코드 형식이 아니에요 (KJD1. 로 시작해야 해요)');return}
+  sh.box={o:o.o,r:o.r,t:o.t};shSaveCfg();$('#shCode').value='';sh.err='';sh.pushed='';
+  shUI();toast('연결했어요. 주고받는 중…');shSync();
+}
+function shDisconnect(){
+  if(!sh.box){toast('따로 연결된 코드가 없어요');return}
+  if(!confirm('공유 연결을 해제할까요? (저장해 둔 상대 내용도 지워져요)'))return;
+  sh.box=null;sh.cache={events:[],cycle:[],at:0};sh.err='';sh.msg='';sh.pushed='';
+  shSaveCfg();try{localStorage.removeItem(SH_CACHE)}catch(e){}
+  cyInv();renderAll();shUI();
+}
+function shSync(){return shPush().then(shPull)}
+function shBind(){
+  $('#mSh').onclick=function(){shUI(true);$('#shOv').classList.add('open')};
+  $('#shClose').onclick=function(){$('#shOv').classList.remove('open')};
+  $('#shvClose').onclick=function(){$('#shvOv').classList.remove('open')};
+  $('#shMe').onchange=function(){
+    sh.me=this.value;sh.pushed='';sh.err='';sh.msg='';shSaveCfg();shUI();renderAll();
+    if(shReady())shSync();
+  };
+  $('#shConnect').onclick=shConnect;$('#shDisc').onclick=shDisconnect;
+  $('#shNow').onclick=function(){if(!shReady()){toast('먼저 연결을 끝내 주세요');return}sh.pushed='';shSync()};
+}
+
+/* ---------- 생리주기 (기록 · 예측) ---------- */
+function cyInv(){cyMC=null}
+function cyAvg(a){var t=0;a.forEach(function(x){t+=x});return Math.round(t/a.length)}
+function cyBuild(recs){
+  var r=(recs||[]).filter(function(x){return x&&/^\d{4}-\d{2}-\d{2}$/.test(x.s)}).sort(function(a,b){return a.s<b.s?-1:a.s>b.s?1:0});
+  if(!r.length)return null;
+  var td=todayS(),gaps=[],lens=[],i;
+  for(i=1;i<r.length;i++){var g=dayDiff(r[i-1].s,r[i].s);if(g>=18&&g<=60)gaps.push(g)}
+  gaps=gaps.slice(-6);
+  r.forEach(function(x){if(x.e&&x.e>=x.s){var n=dayDiff(x.s,x.e)+1;if(n>=2&&n<=12)lens.push(n)}});
+  lens=lens.slice(-6);
+  var cl=gaps.length?cyAvg(gaps):28,pl=lens.length?cyAvg(lens):5;
+  var map={};
+  function put(d,v){var o=map[d];if(!o||CY_RANK[v.k]>CY_RANK[o.k])map[d]=v}
+  r.forEach(function(x){
+    var e=x.e&&x.e>=x.s?x.e:addDays(x.s,pl-1),n=0,d=x.s;
+    while(d<=e&&n<20){n++;put(d,{k:'p',n:n,first:n===1});d=addDays(d,1)}
+  });
+  var last=r[r.length-1],lim=addDays(td,150),pred=[];
+  for(i=1;i<=9;i++){
+    var ns=addDays(last.s,cl*i);if(ns>lim)break;
+    var pe=addDays(ns,pl-1),ov=addDays(ns,-14);
+    if(pe<addDays(td,-7))continue;
+    var d2=ns,k2=0;while(d2<=pe){k2++;put(d2,{k:'pp',n:k2,first:k2===1});d2=addDays(d2,1)}
+    for(var j=-5;j<=1;j++){put(addDays(ov,j),j===0?{k:'ovl'}:{k:'f',ovd:j})}
+    pred.push({s:ns,e:pe,ov:ov,fs:addDays(ov,-5),fe:addDays(ov,1)});
+  }
+  return {map:map,cl:cl,pl:pl,n:r.length,gaps:gaps.length,last:last,pred:pred,list:r};
+}
+function cyModels(){
+  if(cyMC&&cyMC.day===todayS())return cyMC.list;
+  var list=[],m;
+  if(cy.mode==='self'){m=cyBuild(S.cycle);if(m){m.name='';list.push(m)}}
+  else if(cy.mode==='partner'){m=cyBuild(sh.cache.cycle);if(m){m.name=shName();list.push(m)}}
+  cyMC={day:todayS(),list:list};return list;
+}
+function cyOn(s){
+  var out=[];
+  cyModels().forEach(function(m){
+    var v=m.map[s];if(!v)return;
+    var nm=m.name?m.name+' ':'',t,sub='';
+    if(v.k==='p')t='🩸 '+nm+'생리 '+v.n+'일째';
+    else if(v.k==='pp'){t='🌸 '+nm+'생리 예정 '+v.n+'일째';sub='예상'}
+    else if(v.k==='ovl'){t='🥚 '+nm+'배란 예정일';sub='예상'}
+    else{t='💗 '+nm+'가임기';sub=(v.ovd<0?'배란 '+(-v.ovd)+'일 전':'배란 다음날')+' · 예상'}
+    out.push({k:v.k,first:!!v.first,text:t,sub:sub});
+  });
+  return out;
+}
+function cyCell(s,cell,box){
+  var r=cyOn(s)[0];if(!r)return;
+  cell.appendChild(h('span',{class:'cyb '+r.k}));
+  var chip=r.k==='p'&&r.first?'🩸 생리':r.k==='pp'&&r.first?'🌸 예정':r.k==='ovl'?'🥚 배란':'';
+  if(chip)box.appendChild(h('div',{class:'it mark cy '+r.k,title:r.text},h('span',{class:'tx'},chip)));
+}
+function cyFmt(d){return +d.slice(5,7)+'/'+ +d.slice(8,10)}
+function cyDd(d){var n=dayDiff(todayS(),d);return n===0?'오늘':n>0?'D-'+n:(-n)+'일 지남'}
+function cyStat(m){
+  if(!m)return '아직 기록이 없어요. 생리 시작일을 기록하면 다음 예정일을 알려 드려요.';
+  var L=['기록 '+m.n+'회 · 평균 주기 '+m.cl+'일 · 평균 생리 '+m.pl+'일'],nx=m.pred[0];
+  if(nx){
+    L.push('다음 생리 예정: '+cyFmt(nx.s)+' ~ '+cyFmt(nx.e)+' ('+cyDd(nx.s)+')');
+    L.push('배란 예정일: '+cyFmt(nx.ov)+' · 가임기(예상): '+cyFmt(nx.fs)+' ~ '+cyFmt(nx.fe));
+    if(nx.s<todayS()&&todayS()<=nx.e)L.push('예정일이 지났어요. 시작했다면 시작일을 기록해 주세요.');
+  }
+  if(m.gaps<2)L.push('기록이 2~3번 쌓이면 더 정확해져요'+(m.gaps?'':' (지금은 기본 28일로 계산해요)'));
+  return L.join('\n');
+}
+/* --- 내 기록 (직접 기록하는 앱) --- */
+function cyResetForm(){cy.editId=null;$('#cyS').value=todayS();$('#cyE').value='';$('#cyAdd').textContent='기록 저장';$('#cyFormCancel').hidden=true}
+function cyChanged(msg){touch();cyInv();renderAll();cyUI();if(msg)toast(msg)}
+function cySaveRec(){
+  var s=$('#cyS').value,e=$('#cyE').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s)){toast('시작일을 선택하세요');return}
+  if(e&&e<s){toast('종료일이 시작일보다 빨라요');return}
+  if(e&&dayDiff(s,e)>14){toast('생리 기간이 15일을 넘어요. 날짜를 확인해 주세요');return}
+  var now=Date.now(),id=cy.editId||'c-'+uid();
+  S.cycle.forEach(function(x){if(x.s===s&&x.id!==id)S.tomb[x.id]=now});
+  S.cycle=S.cycle.filter(function(x){return x.id!==id&&x.s!==s});
+  S.cycle.push({id:id,s:s,e:e,u:now});
+  cyResetForm();cyChanged('저장했어요');
+}
+function cyStartToday(){
+  var td=todayS();
+  if(S.cycle.some(function(x){return x.s===td})){toast('오늘 시작은 이미 기록돼 있어요');return}
+  S.cycle.push({id:'c-'+uid(),s:td,e:'',u:Date.now()});
+  cyChanged('오늘 생리 시작을 기록했어요');
+}
+function cyEndToday(){
+  var td=todayS(),cur=null;
+  S.cycle.forEach(function(x){if(x.s<=td&&(!cur||x.s>cur.s))cur=x});
+  if(!cur){toast('먼저 시작일을 기록해 주세요');return}
+  if(dayDiff(cur.s,td)>14){toast('마지막 시작일('+cyFmt(cur.s)+')이 너무 오래됐어요. 날짜를 직접 골라 주세요');return}
+  cur.e=td;cur.u=Date.now();
+  cyChanged('오늘로 종료를 기록했어요');
+}
+function cyEditRec(id){
+  var x=S.cycle.filter(function(r){return r.id===id})[0];if(!x)return;
+  cy.editId=id;$('#cyS').value=x.s;$('#cyE').value=x.e||'';
+  $('#cyAdd').textContent='수정 저장';$('#cyFormCancel').hidden=false;
+}
+function cyDelRec(id){
+  if(!confirm('이 기록을 삭제할까요?'))return;
+  S.cycle=S.cycle.filter(function(x){return x.id!==id});S.tomb[id]=Date.now();
+  if(cy.editId===id)cyResetForm();
+  cyChanged('삭제했어요');
+}
+function cyUI(){
+  $('#cyMode').value=cy.mode;
+  $('#cySelf').hidden=cy.mode!=='self';$('#cyPartner').hidden=cy.mode!=='partner';
+  if(cy.mode==='self'){
+    $('#cyStat').textContent=cyStat(cyBuild(S.cycle));
+    var box=$('#cyList');box.textContent='';
+    S.cycle.slice().sort(function(a,b){return a.s<b.s?1:-1}).slice(0,24).forEach(function(x){
+      var len=x.e&&x.e>=x.s?dayDiff(x.s,x.e)+1:0;
+      box.appendChild(h('div',{class:'arow'},
+        h('div',{class:'am'},h('b',{},x.s+(x.e?' ~ '+x.e:' ~ (종료일 없음)')),h('div',{},len?len+'일':'')),
+        h('button',{class:'btn',onclick:function(){cyEditRec(x.id)}},'수정'),
+        h('button',{class:'btn danger',onclick:function(){cyDelRec(x.id)}},'삭제')));
+    });
+    $('#cyShareNote').textContent=shReady()?'상대와 공유: 켜짐'+(sh.msg?'\n'+sh.msg:''):'상대 앱에서 보려면 먼저 ⋯ → 🤝 상대와 공유에서 연결해 주세요';
+    $('#cyShareNote').style.whiteSpace='pre-line';
+  }
+  if(cy.mode==='partner'){
+    var L=[];
+    if(!shReady())L.push('⋯ → 🤝 상대와 공유에서 먼저 연결해 주세요.');
+    else{
+      L.push(sh.err?'⚠ '+sh.err:(sh.cache.at?shName()+'님 기록 확인 '+new Date(sh.cache.at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'불러오는 중…'));
+      L.push(cyStat(cyBuild(sh.cache.cycle)));
+    }
+    $('#cyPStat').textContent=L.join('\n');
+  }
+}
+function cyOpen(){cyResetForm();cyUI();$('#cyOv').classList.add('open')}
+function cyBind(){
+  $('#mCy').onclick=cyOpen;
+  $('#cyClose').onclick=function(){$('#cyOv').classList.remove('open')};
+  $('#cyMode').onchange=function(){
+    cy.mode=this.value;cySaveCfg();cyInv();cyResetForm();cyUI();renderAll();
+    if(shReady()){sh.pushed='';shSync()}
+  };
+  $('#cyAdd').onclick=cySaveRec;$('#cyToday').onclick=cyStartToday;$('#cyEndToday').onclick=cyEndToday;
+  $('#cyFormCancel').onclick=cyResetForm;
+  $('#cyReload').onclick=function(){if(!shReady()){toast('먼저 공유 연결을 해 주세요');return}shPull()};
+  shBind();
+}
+/*/CYCLE*/
+
 /* ---------- cloud sync (GitHub contents API) ---------- */
 var SYNC_KEY='scheduler-sync-v1';
 var sync={cfg:null,busy:false,again:false,timer:null,pendingRender:false};
@@ -1447,7 +1841,8 @@ function mergeState(a,b){
     cats:mergeList(a.cats,b.cats).sort(function(x,y){return (x.o||0)-(y.o||0)||byId(x,y)}),
     memos:mergeList(a.memos,b.memos).sort(byId),
     diary:mergeList(a.diary,b.diary).sort(byId),
-    anns:mergeList(a.anns,b.anns).sort(byId)
+    anns:mergeList(a.anns,b.anns).sort(byId),
+    cycle:mergeList(a.cycle,b.cycle).sort(byId)
   };
 }
 function canon(st){
@@ -1458,7 +1853,8 @@ function canon(st){
     c:(st.cats||[]).slice().sort(byId),
     m:(st.memos||[]).slice().sort(byId),
     d:(st.diary||[]).slice().sort(byId),
-    a:(st.anns||[]).slice().sort(byId)
+    a:(st.anns||[]).slice().sort(byId),
+    y:(st.cycle||[]).slice().sort(byId)
   });
 }
 async function remoteGet(){
@@ -1512,17 +1908,18 @@ async function syncNow(){
     var changed=false;
     for(var i=0;i<4;i++){
       var rem=await remoteGet();
-      var merged=mergeState(S,rem.data||{events:[],todos:{},tomb:{},cats:[],memos:[],diary:[],anns:[]});
+      var merged=mergeState(S,rem.data||{events:[],todos:{},tomb:{},cats:[],memos:[],diary:[],anns:[],cycle:[]});
       if(canon(merged)!==canon(S))changed=true;
-      S.events=merged.events;S.todos=merged.todos;S.tomb=merged.tomb;S.cats=merged.cats;S.memos=merged.memos;S.diary=merged.diary;S.anns=merged.anns;
+      S.events=merged.events;S.todos=merged.todos;S.tomb=merged.tomb;S.cats=merged.cats;S.memos=merged.memos;S.diary=merged.diary;S.anns=merged.anns;S.cycle=merged.cycle;
       if(!S.cats.length)S.cats=JSON.parse(JSON.stringify(DEFAULT_CATS));
       save();
       if(rem.data&&canon(merged)===canon(rem.data))break;   // 이미 같음
-      var res=await remotePut({events:S.events,todos:S.todos,tomb:S.tomb,cats:S.cats,memos:S.memos,diary:S.diary,anns:S.anns},rem.sha);
+      var res=await remotePut({events:S.events,todos:S.todos,tomb:S.tomb,cats:S.cats,memos:S.memos,diary:S.diary,anns:S.anns,cycle:S.cycle},rem.sha);
       if(res.ok)break;
       if(i===3)throw new Error('다른 기기와 저장이 계속 겹쳐요. 잠시 후 다시 시도해 주세요');
     }
     photoBg();   // 사진은 뒤에서 따로 맞춤 (연결 확인이 오래 걸리지 않게)
+    /*CYCLE*/cyAfterSync();/*/CYCLE*/
     setStatus('ok');
     if(changed){if(listBusy())sync.pendingRender=true;else renderAll()}
   }catch(e){
@@ -1605,7 +2002,7 @@ function offSync(){
 /* ---------- wire up ---------- */
 function closeAll(){
   closeDiary();
-  ['#evOv','#helpOv','#syncOv','#catOv','#annOv'].forEach(function(s){$(s).classList.remove('open')});
+  ['#evOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){$(s).classList.remove('open')});
   $('#menu').classList.remove('open');
 }
 function bind(){
@@ -1617,7 +2014,7 @@ function bind(){
   $('#addEvBtn').onclick=function(){openEv(null,sel)};
   $('#evSave').onclick=saveEv;$('#evCancel').onclick=closeEv;$('#evDel').onclick=delEv;
   $('#evAll').onchange=syncAll;
-  ['#evOv','#helpOv','#syncOv','#catOv','#annOv'].forEach(function(s){
+  ['#evOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){
     $(s).addEventListener('mousedown',function(e){if(e.target===this)this.classList.remove('open')});
   });
   $('#diaryBtn').onclick=function(){openDiary(todayS())};
@@ -1650,6 +2047,7 @@ function bind(){
   $('#annCancel').onclick=function(){annShow(false)};
   $('#annSave').onclick=annSave;$('#annDel').onclick=annDelete;
   $('#annK').onchange=annKindUI;$('#annCal').onchange=annKindUI;['annLY','annLM','annLD','annLL'].forEach(function(i){$('#'+i).oninput=annLunNote;$('#'+i).onchange=annLunNote});$('#annD').onchange=annLunNote;$('#annD').oninput=annLunNote;
+  /*CYCLE*/cyBind();/*/CYCLE*/
   $('#mCats').onclick=function(){renderCats();$('#catOv').classList.add('open')};
   $('#catAdd').onclick=addCat;
   $('#catClose').onclick=function(){$('#catOv').classList.remove('open')};
@@ -1684,6 +2082,7 @@ function bind(){
         if(Array.isArray(o.memos))S.memos=replaceList(S.memos,o.memos,t2);
         if(Array.isArray(o.diary))S.diary=replaceList(S.diary,o.diary,t2);
         if(Array.isArray(o.anns))S.anns=replaceList(S.anns,o.anns,t2);
+        if(Array.isArray(o.cycle))S.cycle=replaceList(S.cycle,o.cycle,t2);
         S.todos=o.todos;touch();renderAll();toast('백업을 불러왔어요');
       }catch(e){toast('올바른 백업 파일이 아니에요')}
       self.value='';
@@ -1736,6 +2135,7 @@ function bind(){
   });
   document.addEventListener('visibilitychange',function(){if(!document.hidden)scheduleSync(200)});
   window.addEventListener('online',function(){scheduleSync(200)});
+  /*CYCLE*/setInterval(function(){if(!document.hidden)shPull()},120000);document.addEventListener('visibilitychange',function(){if(!document.hidden)shPull()});/*/CYCLE*/
   setInterval(function(){if(!document.hidden)scheduleSync(0)},120000);   // 2분마다 (앱을 열거나 수정하면 바로 동기화)
 
   var rz;window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(function(){renderMonth();renderWeek()},120)});
@@ -1746,7 +2146,7 @@ function bind(){
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){renderMonth()});   // 글꼴이 늦게 뜨면 칸 다시 맞춤
 }
 
-load();loadCfg();applyFont();bind();renderAll();
+load();loadCfg();/*CYCLE*/cyLoad();/*/CYCLE*/applyFont();bind();renderAll();/*CYCLE*/shPull();shPushSoon();/*/CYCLE*/
 setStatus(cfgOK()?'busy':'off');
 if(migrated)touch();
 if(cfgOK())scheduleSync(100);
