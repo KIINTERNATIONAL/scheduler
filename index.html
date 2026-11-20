@@ -33,7 +33,7 @@ html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:14px/1.45 "Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);-webkit-font-smoothing:antialiased}
 button,select{font:inherit;color:inherit;cursor:pointer}
-.app{display:flex;flex-direction:column;max-width:1500px;margin:0 auto}
+.app{display:flex;flex-direction:column;max-width:1880px;margin:0 auto}
 
 /* buttons */
 .btn{border:1px solid var(--line2);background:transparent;border-radius:8px;padding:6px 12px;line-height:1.2;font-size:13px}
@@ -68,9 +68,9 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 
 /* book */
 .book{position:relative;display:flex;gap:0;padding:0 18px 18px}
-.spread{flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;background:var(--paper);border-radius:6px 6px 6px 6px;
+.spread{--sp:50%;flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,var(--sp)) minmax(0,1fr);background:var(--paper);border-radius:6px 6px 6px 6px;
   box-shadow:0 1px 2px rgba(0,0,0,.06),0 12px 40px rgba(0,0,0,.10);position:relative;height:calc(100vh - 70px);height:calc(100dvh - 70px);min-height:560px}
-.spread::after{content:'';position:absolute;top:0;bottom:0;left:50%;width:36px;margin-left:-18px;pointer-events:none;
+.spread::after{content:'';position:absolute;top:0;bottom:0;left:var(--sp);width:36px;margin-left:-18px;pointer-events:none;
   background:linear-gradient(90deg,transparent,rgba(0,0,0,.045) 45%,rgba(0,0,0,.08) 50%,rgba(0,0,0,.045) 55%,transparent)}
 .leaf{min-width:0;min-height:0;display:flex;flex-direction:column;padding:22px 28px 16px;overflow:auto}
 .leaf.l{border-right:1px solid var(--line)}
@@ -222,6 +222,7 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 .wl{display:flex;align-items:center;gap:6px;font-size:12.5px;min-width:0;line-height:1.4}
 .wl .bar{width:3px;height:13px;border-radius:2px;flex:none}
 .wl .tm{font-size:11px;color:var(--sub);flex:none}
+.wl.ev{cursor:pointer}.wl.ev:hover .tx{text-decoration:underline}
 .wl .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .wl .ck{flex:none;width:11px;height:11px;border:1.3px solid currentColor;border-radius:2px;cursor:pointer}
 .wl.done .ck{background:currentColor}
@@ -306,8 +307,11 @@ button,select{font:inherit;color:inherit;cursor:pointer}
   input,select,textarea{font-size:16px !important}
   .top{padding:10px 12px 8px;gap:6px}
   .cheer{order:9;width:100%;font-size:11.5px}
-  .book{padding:0 10px calc(74px + env(safe-area-inset-bottom))}
-  .spread{display:block;height:auto;min-height:0;border-radius:12px}
+  body{background:var(--paper)}
+  .book{padding:0 0 calc(74px + env(safe-area-inset-bottom))}
+  .spread{display:block;height:auto;min-height:0;border-radius:0;box-shadow:none;border-top:1px solid var(--line)}
+  .leaf .mon{margin-left:-14px;margin-right:-14px}   /* 달력은 화면 끝까지 */
+  .leaf .mon .cell:first-child,.leaf .mon .grid>.cell:nth-child(7n+1){border-left:0}
   .spread::after{display:none}
   .leaf{padding:16px 14px 14px;overflow:visible}
   .leaf.l{border-right:0}
@@ -391,7 +395,6 @@ button,select{font:inherit;color:inherit;cursor:pointer}
     <nav class="tabs" id="tabs">
       <button data-t="month">MONTH</button>
       <button data-t="week">WEEK</button>
-      <button data-t="day">DAY</button>
       <button data-t="notes">NOTES</button>
       <button data-t="diary">DIARY</button>
     </nav>
@@ -835,7 +838,7 @@ function timeLabel(e,d){
   return e.start||'';
 }
 /* ---------- 화면 구성 (PC: 펼친 다이어리 두 페이지 + 오른쪽 탭 / 모바일: 한 페이지 + 아래 탭) ---------- */
-var TABS=['month','week','day','notes','diary'];
+var TABS=['month','week','notes','diary'];
 var tab=getPref('kojiday-tab','month');if(TABS.indexOf(tab)<0)tab='month';
 var MON_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var DOW_EN=['SUN','MON','TUE','WED','THU','FRI','SAT'];
@@ -1129,15 +1132,15 @@ function diaryPanel(d){
 /* ---------- 주간 ---------- */
 function weekRow(d,td){
   var dt=parse(d),de=dEntry(d);
-  var row=h('div',{class:'wr'+(d===td?' today':''),'data-d':d,title:'눌러서 이 날 보기'});
-  row.addEventListener('click',function(){sel=d;setTab('day')});
+  var row=h('div',{class:'wr'+(d===td?' today':''),'data-d':d,title:'눌러서 이 날 다이어리 열기'});
+  row.addEventListener('click',function(){sel=d;openDiary(d)});
   row.appendChild(h('div',{class:'wd '+dowCls(d)},h('b',{},''+dt.getDate()),h('small',{},DOW_EN[dt.getDay()])));
   var c=h('div',{class:'wc'}),any=false;
   if(holName(d)){any=true;c.appendChild(h('div',{class:'wl mk hol'},h('span',{class:'tx'},holName(d))))}
   annOn(d).forEach(function(r){any=true;c.appendChild(h('div',{class:'wl mk '+r.k},h('span',{class:'tx'},r.text)))});
   eventsOn(d).forEach(function(e){
     any=true;
-    c.appendChild(h('div',{class:'wl'},h('span',{class:'bar',style:'background:'+evColor(e)}),h('span',{class:'tm'},timeLabel(e,d)),h('span',{class:'tx'},e.title)));
+    c.appendChild(h('div',{class:'wl ev',title:'눌러서 일정 수정',onclick:function(ev){ev.stopPropagation();openEv(e.id)}},h('span',{class:'bar',style:'background:'+evColor(e)}),h('span',{class:'tm'},timeLabel(e,d)),h('span',{class:'tx'},e.title)));
   });
   /*CYCLE*/shEvOn(d).forEach(function(e){
     any=true;
@@ -1218,6 +1221,7 @@ function render(){
   var wide=isWide(),L=$('#pL'),R=$('#pR');
   [].forEach.call(document.querySelectorAll('#tabs button'),function(b){b.classList.toggle('on',b.getAttribute('data-t')===tab)});
   var sL=L.scrollTop,sR=R.scrollTop,sW=window.scrollY;
+  $('#spread').style.setProperty('--sp',(tab==='month'||tab==='diary')?'61%':'50%');   // 달력 탭은 왼쪽(달력) 페이지를 더 넓게
   L.textContent='';R.textContent='';
   var A=L,B=wide?R:L;
   if(tab==='month'){
@@ -1240,10 +1244,6 @@ function render(){
       for(var j=0;j<7;j++)r3.appendChild(weekRow(addDays(ws,j),td));
       A.appendChild(r3);
     }
-  }else if(tab==='day'){
-    A.appendChild(dayPanel(sel));
-    if(!wide)B.appendChild(h('div',{style:'height:22px'}));
-    B.appendChild(diaryPanel(sel));
   }else if(tab==='notes'){
     if(wide){
       A.appendChild(notesList());
