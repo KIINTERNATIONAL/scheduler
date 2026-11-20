@@ -1,6 +1,6 @@
 {
-  "name": "KOJIDAY",
-  "short_name": "KOJIDAY",
+  "name": "해리코지",
+  "short_name": "해리코지",
   "description": "월간 캘린더 + 일별 할 일 + 주간 목록",
   "lang": "ko",
   "start_url": "./index.html",
