@@ -142,6 +142,13 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 .cell .pcnt{position:absolute;right:4px;bottom:4px;z-index:2;min-width:15px;height:15px;padding:0 3px;border-radius:3px;background:rgba(255,255,255,.92);color:#111;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .cell .dtx{position:absolute;left:6px;right:6px;top:27px;font-size:10.5px;line-height:1.45;color:var(--ink);opacity:.75;overflow:hidden;white-space:pre-wrap;word-break:break-all;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5}
 @media (max-width:700px){.cell .dtx{left:3px;right:3px;top:24px;font-size:9.5px;line-height:1.35;-webkit-line-clamp:2}}
+.mwrap{touch-action:pan-y}
+.leaf{position:relative}
+.mwrap{display:flex;flex-direction:column;flex:1;min-height:0}
+.mwrap.turning{position:relative;z-index:5;background:var(--paper);backface-visibility:hidden;-webkit-backface-visibility:hidden;will-change:transform}
+.mwrap.turning .shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,.05) 40%,rgba(0,0,0,.18));opacity:0;z-index:6}
+.mwrap.under{z-index:1;background:var(--paper);pointer-events:none}
+.mwrap.turning .mon,.mwrap.under .mon{background:var(--paper)}
 /* 작은 달력 */
 .mon.mini{flex:none;margin-bottom:14px}
 .mon.mini .grid{grid-auto-rows:34px;border-top:1px solid var(--line2)}
@@ -971,10 +978,90 @@ function monthEl(mode,opts){
   mon.appendChild(grid);
   return mon;
 }
+/* 달 머리 + 달력을 한 장(페이지)으로 묶음 — 넘길 때 같이 넘어감 */
+function monthBlock(mode,opts,sub,under){
+  var w=h('div',{class:'mwrap','data-mode':mode,'data-sub':sub||''});
+  if(opts&&opts.weekNo)w.setAttribute('data-wn','1');
+  w.appendChild(monthHead(sub));
+  w.appendChild(monthEl(mode,opts));
+  if(!under&&!isWide())addSwipe(w);
+  return w;
+}
+/* ---------- 종이 넘기듯 달 바꾸기 ---------- */
+/* 다음 달: 왼쪽 가장자리(책등)를 축으로 지금 페이지가 왼쪽으로 넘어감 / 이전 달: 오른쪽 가장자리를 축으로 넘어감 */
+var flipping=false;
+function addView(n){var y=view.y,m=view.m+n;while(m<0){m+=12;y--}while(m>11){m-=12;y++}return {y:y,m:m}}
+function flipStart(mon,dir){
+  var leaf=mon.parentNode,keep=view;
+  view=addView(dir);
+  var under=monthBlock(mon.getAttribute('data-mode'),{weekNo:!!mon.getAttribute('data-wn')},mon.getAttribute('data-sub')||'',true);
+  view=keep;
+  under.classList.add('under');[].forEach.call(under.querySelectorAll('button'),function(b){b.disabled=true});
+  under.style.cssText='position:absolute;margin:0;top:'+mon.offsetTop+'px;left:'+mon.offsetLeft+'px;width:'+mon.offsetWidth+'px;height:'+mon.offsetHeight+'px';
+  leaf.insertBefore(under,mon);
+  [].forEach.call(under.querySelectorAll('.items'),fitItems);
+  mon.classList.add('turning');
+  mon.style.transformOrigin=dir>0?'left center':'right center';
+  var shade=h('div',{class:'shade'});mon.appendChild(shade);
+  return {mon:mon,under:under,shade:shade,dir:dir};
+}
+function flipSet(f,p){   // p: 0~1 넘어간 정도
+  var a=(f.dir>0?-1:1)*180*p,s=Math.sin(Math.PI*p);
+  f.mon.style.transform='perspective(1600px) rotateY('+a+'deg)';
+  f.shade.style.opacity=Math.min(.55,p*1.1);
+  f.mon.style.boxShadow=(f.dir>0?'':'-')+(18*s)+'px 0 30px rgba(0,0,0,'+(.22*s)+')';
+}
+function flipEnd(f,done){
+  var ms=done?340:220;
+  f.mon.style.transition='transform '+ms+'ms ease-out, box-shadow '+ms+'ms ease-out';
+  f.shade.style.transition='opacity '+ms+'ms ease-out';
+  flipSet(f,done?1:0);
+  setTimeout(function(){
+    flipping=false;
+    if(done){view=addView(f.dir);render()}
+    else{f.under.remove();f.shade.remove();f.mon.classList.remove('turning');f.mon.style.cssText=''}
+  },ms+20);
+}
+function shiftMonth(n){
+  if(flipping)return;
+  var mon=document.querySelector('#spread .mwrap');
+  if(!mon){view=addView(n);render();return}
+  flipping=true;
+  var f=flipStart(mon,n);
+  mon.offsetWidth;   // 시작 상태를 먼저 그려야 애니메이션이 보임
+  flipEnd(f,true);
+}
+function addSwipe(el){
+  var x0=null,y0=0,t0=0,f=null,lock=0;
+  el.addEventListener('touchstart',function(e){
+    if(flipping||e.touches.length!==1){x0=null;return}
+    x0=e.touches[0].clientX;y0=e.touches[0].clientY;t0=Date.now();f=null;lock=0;
+  },{passive:true});
+  el.addEventListener('touchmove',function(e){
+    if(x0===null)return;
+    var dx=e.touches[0].clientX-x0,dy=e.touches[0].clientY-y0;
+    if(!lock){
+      if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
+      lock=Math.abs(dx)>Math.abs(dy)*1.2?1:-1;   // 1: 옆으로 넘기기, -1: 위아래 스크롤
+      if(lock>0){flipping=true;f=flipStart(el,dx<0?1:-1)}
+    }
+    if(lock<0||!f)return;
+    var p=(f.dir>0?-dx:dx)/el.offsetWidth;
+    flipSet(f,Math.max(0,Math.min(1,p)));
+  },{passive:true});
+  function end(e){
+    if(x0===null)return;
+    var t=e.changedTouches&&e.changedTouches[0],dx=t?t.clientX-x0:0;x0=null;
+    if(!f)return;
+    var p=(f.dir>0?-dx:dx)/el.offsetWidth,fast=Date.now()-t0<300&&p>.12;
+    flipEnd(f,p>.35||fast);f=null;
+  }
+  el.addEventListener('touchend',end,{passive:true});
+  el.addEventListener('touchcancel',end,{passive:true});
+}
 function monthHead(sub){
   return leafHead(MON_EN[view.m],sub?view.y+' · '+sub:view.y+' · '+(view.m+1)+'월',
-    function(){view.m--;if(view.m<0){view.m=11;view.y--}render()},
-    function(){view.m++;if(view.m>11){view.m=0;view.y++}render()});
+    function(){shiftMonth(-1)},function(){shiftMonth(1)});
 }
 
 /* ---------- 하루 (일정 · 할 일 · 메모) ---------- */
@@ -1227,8 +1314,7 @@ function render(){
   L.textContent='';R.textContent='';
   var A=L,B=wide?R:L;
   if(tab==='month'){
-    A.appendChild(monthHead());
-    A.appendChild(monthEl('ev',{weekNo:wide}));
+    A.appendChild(monthBlock('ev',{weekNo:wide}));
     B.appendChild(dayPanel(sel));
   }else if(tab==='week'){
     var ws=weekStart(sel),td=todayS();
@@ -1261,8 +1347,7 @@ function render(){
       A.appendChild(notesList());
     }
   }else if(tab==='diary'){
-    A.appendChild(monthHead('DIARY'));
-    A.appendChild(monthEl('ph',{weekNo:wide}));
+    A.appendChild(monthBlock('ph',{weekNo:wide},'DIARY'));
     if(wide)B.appendChild(diaryPanel(sel));
   }
   B.appendChild(h('div',{class:'sign'},'\u201C오늘도, 이번주도, 올해도 잘 살아보자 여보.\u201D'));   // 모든 탭: 오른쪽(모바일은 맨 아래) 끝
