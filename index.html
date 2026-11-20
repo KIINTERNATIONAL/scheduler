@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>해리코지</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#e8e7e3">
@@ -183,10 +183,10 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 .add input:focus{outline:none;border-bottom-color:var(--ink)}
 .add select{width:70px;border:1px solid var(--line);background:transparent;border-radius:6px;padding:3px 2px;font-size:12px;color:var(--sub)}
 .mi{border-bottom:1px solid var(--line);padding:4px 0}
-.mi textarea{display:block;width:100%;border:0;background:transparent;color:var(--ink);padding:6px 2px;font:13.5px/1.6 "Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;resize:vertical;min-height:64px}
+.mi textarea{display:block;width:100%;border:0;background:transparent;color:var(--ink);padding:6px 2px;font:13px/1.6 "Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;resize:vertical;min-height:64px}
 .mi textarea:focus{outline:none;background:var(--hover)}
 .mi .mb{display:flex;justify-content:flex-end;gap:2px}
-.mwarn{font-size:11px;color:var(--sub);padding:10px 0 4px}
+.sign{margin-top:auto;padding-top:36px;text-align:right;font-size:12.5px;font-weight:500;color:var(--ink);opacity:.75;letter-spacing:.01em}
 
 /* diary inline */
 .dib{display:flex;flex-direction:column;gap:8px}
@@ -238,11 +238,12 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 /* notes */
 .nlist{flex:1}
 .nmon{font-size:10.5px;letter-spacing:.16em;color:var(--sub);margin:14px 0 2px}
-.nrow{display:flex;gap:12px;padding:8px 2px;border-bottom:1px solid var(--line);cursor:pointer;align-items:baseline}
+.nrow{display:flex;gap:12px;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer;align-items:flex-start}
 .nrow:hover{background:var(--hover)}
 .nrow.on{background:var(--acc-soft)}
 .nrow .nd{font-size:12px;color:var(--sub);flex:none;width:62px}
-.nrow .nt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
+.nrow .nt{flex:1;min-width:0;overflow:hidden;font-size:13px;line-height:1.5;white-space:pre-line;word-break:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.nrow .nd,.nrow .nc{padding-top:1px}
 .nrow .nc{font-size:11px;color:var(--sub);flex:none}
 
 /* diary overlay page */
@@ -305,6 +306,8 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 /* mobile */
 @media (max-width:999px){
   input,select,textarea{font-size:16px !important}
+  .mi textarea{font-size:13px !important}
+  .add input{font-size:15px !important}
   .top{padding:10px 12px 8px;gap:6px}
   .cheer{order:9;width:100%;font-size:11.5px}
   body{background:var(--paper)}
@@ -323,7 +326,7 @@ button,select{font:inherit;color:inherit;cursor:pointer}
   .tabs button:last-child{border-radius:0 4px 4px 0}
   .mon.big .grid{grid-auto-rows:104px}
   .mon.ph .grid{grid-auto-rows:minmax(0,auto)}
-  .mon.ph .cell{aspect-ratio:1/1.12}
+  .mon.ph .cell{aspect-ratio:1/1.5}
   .wr{flex:none;min-height:0}
   .dp{margin-top:18px}
   .wkrows .wr:last-child{border-bottom:0}
@@ -1094,7 +1097,6 @@ function memoSection(d){
     });
     box.appendChild(h('div',{class:'mi'},ta,h('div',{class:'mb'},copy,del)));
   });
-  box.appendChild(h('div',{class:'mwarn'},'오늘도, 이번주도, 올해도 잘 살아보자 여보.'));
   return box;
 }
 
@@ -1206,7 +1208,7 @@ function notesList(){
   dates.forEach(function(d){
     var ym=d.slice(0,7);
     if(ym!==lastM){lastM=ym;box.appendChild(h('div',{class:'nmon'},MON_EN[+ym.slice(5)-1].toUpperCase()+' '+ym.slice(0,4)))}
-    var dt=parse(d),list=by[d],first=list[list.length-1].t.trim().split('\n')[0];
+    var dt=parse(d),list=by[d],first=list[list.length-1].t.trim();
     box.appendChild(h('div',{class:'nrow'+(d===sel?' on':''),onclick:function(){selectDay(d)}},
       h('span',{class:'nd'},(dt.getMonth()+1)+'.'+dt.getDate()+' '+DOW[dt.getDay()]),
       h('span',{class:'nt'},first),
@@ -1263,6 +1265,7 @@ function render(){
     A.appendChild(monthEl('ph',{weekNo:wide}));
     if(wide)B.appendChild(diaryPanel(sel));
   }
+  B.appendChild(h('div',{class:'sign'},'\u201C오늘도, 이번주도, 올해도 잘 살아보자 여보.\u201D'));   // 모든 탭: 오른쪽(모바일은 맨 아래) 끝
   [].forEach.call(document.querySelectorAll('#spread .items'),fitItems);
   if(keepScroll){L.scrollTop=sL;R.scrollTop=sR;if(!wide)window.scrollTo(0,sW)}
   else{L.scrollTop=0;R.scrollTop=0;window.scrollTo(0,0)}
