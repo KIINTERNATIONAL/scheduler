@@ -229,7 +229,7 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 .wl{display:flex;align-items:center;gap:6px;font-size:12.5px;min-width:0;line-height:1.4}
 .wl .bar{width:3px;height:13px;border-radius:2px;flex:none}
 .wl .tm{font-size:11px;color:var(--sub);flex:none}
-.wl.ev{cursor:pointer}.wl.ev:hover .tx{text-decoration:underline}
+.wl.wev{cursor:pointer}.wl.wev:hover .tx{text-decoration:underline}
 .wl .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .wl .ck{flex:none;width:11px;height:11px;border:1.3px solid currentColor;border-radius:2px;cursor:pointer}
 .wl.done .ck{background:currentColor}
@@ -1229,7 +1229,7 @@ function weekRow(d,td){
   annOn(d).forEach(function(r){any=true;c.appendChild(h('div',{class:'wl mk '+r.k},h('span',{class:'tx'},r.text)))});
   eventsOn(d).forEach(function(e){
     any=true;
-    c.appendChild(h('div',{class:'wl ev',title:'눌러서 일정 수정',onclick:function(ev){ev.stopPropagation();openEv(e.id)}},h('span',{class:'bar',style:'background:'+evColor(e)}),h('span',{class:'tm'},timeLabel(e,d)),h('span',{class:'tx'},e.title)));
+    c.appendChild(h('div',{class:'wl wev',title:'눌러서 일정 수정',onclick:function(ev){ev.stopPropagation();openEv(e.id)}},h('span',{class:'bar',style:'background:'+evColor(e)}),h('span',{class:'tm'},timeLabel(e,d)),h('span',{class:'tx'},e.title)));
   });
   /*CYCLE*/shEvOn(d).forEach(function(e){
     any=true;
@@ -1246,13 +1246,6 @@ function weekRow(d,td){
   if(de&&(de.t||'').trim()){any=true;c.appendChild(h('div',{class:'wtx'},de.t.trim()))}
   if(!any)c.appendChild(h('div',{class:'wempty'},'—'));
   row.appendChild(c);
-  var ph=(de&&de.photos)||[];
-  if(ph.length){
-    var img=h('img',{alt:''});setThumb(ph[0],img);
-    var pb=h('div',{class:'wp'},img);
-    if(ph.length>1)pb.appendChild(h('span',{class:'pcnt'},''+ph.length));
-    row.appendChild(pb);
-  }
   return row;
 }
 function weekHead(ws){
