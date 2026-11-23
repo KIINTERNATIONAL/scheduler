@@ -314,7 +314,21 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 #evvT{font-size:19px;font-weight:700;line-height:1.35;word-break:break-word;margin:0 0 6px;padding:0;border:0}
 #evvW{font-size:13.5px;color:var(--ink);padding-bottom:12px;border-bottom:1.5px solid var(--ink)}
 .loc{margin-top:12px;padding:10px 12px;border:1px solid var(--line2);border-radius:8px}
-.loc .lt{display:flex;flex-direction:column;gap:1px}
+.loc .lt{display:flex;flex-direction:column;gap:1px;cursor:pointer}
+.loc .lt em{font-style:normal;font-size:12px;color:var(--sub)}
+.loc .smap{height:150px;border-radius:6px;overflow:hidden;margin-top:8px;cursor:pointer;background:var(--hover)}
+.loc .lk .nv{font-size:12px;border:1px solid #03c75a;background:#03c75a;color:#fff;border-radius:14px;padding:3px 10px}
+.locpick{display:flex;gap:6px}
+.locpick input{flex:1;min-width:0}
+.locres{border:1px solid var(--line2);border-radius:6px;margin-top:6px;max-height:230px;overflow:auto}
+.locres .lr{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:8px 10px}
+.locres .lr:last-child{border-bottom:0}
+.locres .lr:hover{background:var(--hover)}
+.locres .lr b{display:block;font-size:13.5px;font-weight:600}
+.locres .lr span{display:block;font-size:11.5px;color:var(--sub)}
+.locres .lr-empty{padding:10px;font-size:12.5px;color:var(--sub)}
+#evLocInfo{font-size:12px;color:var(--sub);margin-top:4px}
+#evLocMap{height:170px;border-radius:6px;overflow:hidden;margin-top:6px;background:var(--hover)}
 .loc .lt small{font-size:10.5px;letter-spacing:.14em;color:var(--sub)}
 .loc .lt span{font-size:14px;word-break:break-word}
 .loc .lk{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
@@ -532,7 +546,10 @@ button,select{font:inherit;color:inherit;cursor:pointer}
       <div><label>종료 시간</label><input type="time" id="evEnd"></div>
     </div>
     <label>장소</label>
-    <input type="text" id="evLoc" placeholder="예: 북한산 우이동 입구, 서울 강북구 삼양로 …" autocomplete="off">
+    <div class="locpick"><input type="text" id="evLoc" placeholder="장소 검색 (예: 북한산 우이동, 성수 카페)" autocomplete="off" enterkeyhint="search"><button class="btn" type="button" id="evLocBtn">검색</button><button class="btn icon" type="button" id="evLocClear" aria-label="장소 지우기">✕</button></div>
+    <div class="locres" id="evLocRes" hidden></div>
+    <div id="evLocInfo" hidden></div>
+    <div id="evLocMap" hidden></div>
     <label>메모</label>
     <textarea id="evNote" placeholder="메모"></textarea>
     <!--CYCLE--><label class="chk" id="evShWrap"><input type="checkbox" id="evSh"> <span id="evShName">상대에게 이 일정 공유</span></label><!--/CYCLE-->
@@ -1139,18 +1156,101 @@ function showEv(id){
   $('#evvN').textContent=e.note||'';
   $('#evvN').hidden=!e.note;
   var lc=$('#evvLoc');lc.textContent='';lc.hidden=!e.loc;
-  if(e.loc)lc.appendChild(locBlock(e.loc));
+  if(e.loc)lc.appendChild(locBlock(e));
   $('#evvOv').classList.add('open');
 }
-/* 장소: 이름·주소를 저장해 두고 지도 앱에서 바로 찾기 */
-function locBlock(q){
-  var u=encodeURIComponent(q);
-  return h('div',{class:'loc'},
-    h('div',{class:'lt'},h('small',{},'장소'),h('span',{},q)),
-    h('div',{class:'lk'},
-      h('a',{href:'https://map.naver.com/p/search/'+u,target:'_blank',rel:'noopener'},'네이버 지도'),
-      h('a',{href:'https://map.kakao.com/link/search/'+u,target:'_blank',rel:'noopener'},'카카오맵'),
-      h('a',{href:'https://www.google.com/maps/search/?api=1&query='+u,target:'_blank',rel:'noopener'},'구글 지도')));
+/* ---------- 장소 (카카오 장소 검색 → 핀 → 네이버 지도 앱으로 열기) ---------- */
+var KAKAO_KEY='017bf436509d22260ad1d91dbfd6bc88';
+var kakaoQ=null;
+function kakaoReady(cb){   // 지도 SDK는 처음 필요할 때만 불러옴
+  if(window.kakao&&kakao.maps&&kakao.maps.services){cb(true);return}
+  if(kakaoQ){kakaoQ.push(cb);return}
+  kakaoQ=[cb];
+  var done=function(ok){var q=kakaoQ;kakaoQ=ok?null:null;q.forEach(function(f){f(ok)})};
+  var sc=document.createElement('script');
+  sc.src='https://dapi.kakao.com/v2/maps/sdk.js?appkey='+KAKAO_KEY+'&autoload=false&libraries=services';
+  sc.onload=function(){try{kakao.maps.load(function(){done(true)})}catch(e){done(false)}};
+  sc.onerror=function(){sc.remove();done(false)};
+  document.head.appendChild(sc);
+}
+function isMobileOS(){return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}
+function naverWeb(e){return 'https://map.naver.com/p/search/'+encodeURIComponent(e.addr?e.loc+' '+e.addr:e.loc)}
+function openNaver(e){
+  var app='&appname='+encodeURIComponent(location.origin);
+  if(isMobileOS()){   // 폰·아이패드: 네이버 지도 앱으로 바로 (좌표가 있으면 그 자리에 핀, 없으면 이름으로 검색)
+    location.href=e.lat&&e.lng?'nmap://place?lat='+e.lat+'&lng='+e.lng+'&name='+encodeURIComponent(e.loc)+app
+      :'nmap://search?query='+encodeURIComponent(e.loc)+app;
+  }else window.open(naverWeb(e),'_blank');
+}
+function locBlock(e){
+  var box=h('div',{class:'loc'});
+  var head=h('div',{class:'lt',title:'네이버 지도로 열기'},h('small',{},'장소'),h('span',{},e.loc),e.addr?h('em',{},e.addr):null);
+  head.addEventListener('click',function(){openNaver(e)});
+  box.appendChild(head);
+  if(e.lat&&e.lng){
+    var mp=h('div',{class:'smap',title:'네이버 지도로 열기'});
+    mp.addEventListener('click',function(){openNaver(e)});
+    box.appendChild(mp);
+    kakaoReady(function(ok){
+      if(!ok){mp.remove();return}
+      try{var p=new kakao.maps.LatLng(e.lat,e.lng);new kakao.maps.StaticMap(mp,{center:p,level:3,marker:{position:p}})}catch(err){mp.remove()}
+    });
+  }
+  var q=encodeURIComponent(e.loc);
+  box.appendChild(h('div',{class:'lk'},
+    h('button',{type:'button',class:'nv',onclick:function(){openNaver(e)}},isMobileOS()?'네이버 지도 앱으로 열기':'네이버 지도로 열기'),
+    isMobileOS()?h('a',{href:naverWeb(e),target:'_blank',rel:'noopener'},'네이버 웹'):null,
+    h('a',{href:e.lat?'https://map.kakao.com/link/map/'+q+','+e.lat+','+e.lng:'https://map.kakao.com/link/search/'+q,target:'_blank',rel:'noopener'},'카카오맵'),
+    h('a',{href:'https://www.google.com/maps/search/?api=1&query='+(e.lat?e.lat+','+e.lng:q),target:'_blank',rel:'noopener'},'구글 지도')));
+  return box;
+}
+/* 일정 창: 장소 검색해서 고르기 */
+var locSel=null,locMap=null,locMk=null;
+function locPicked(k){return locSel&&locSel.name===$('#evLoc').value.trim()?locSel[k]:undefined}
+function locPickInit(e){
+  locSel=e&&e.lat?{name:e.loc,addr:e.addr||'',lat:e.lat,lng:e.lng}:null;
+  $('#evLocRes').hidden=true;$('#evLocRes').textContent='';
+  locShowSel();
+}
+function locShowSel(){
+  var box=$('#evLocMap'),info=$('#evLocInfo');
+  if(!locSel){box.hidden=true;info.hidden=true;return}
+  info.hidden=false;info.textContent=locSel.addr||'';
+  box.hidden=false;
+  kakaoReady(function(ok){
+    if(!ok){box.hidden=true;return}
+    var p=new kakao.maps.LatLng(locSel.lat,locSel.lng);
+    if(!locMap||locMap.__el!==box){box.textContent='';locMap=new kakao.maps.Map(box,{center:p,level:3});locMap.__el=box;locMk=new kakao.maps.Marker({position:p,map:locMap})}
+    else{locMap.relayout();locMap.setCenter(p);locMk.setPosition(p)}
+    setTimeout(function(){if(locMap){locMap.relayout();locMap.setCenter(p)}},60);
+  });
+}
+function locSearch(){
+  var q=$('#evLoc').value.trim(),res=$('#evLocRes');
+  if(!q){toast('찾을 장소를 입력하세요');return}
+  res.hidden=false;res.textContent='';res.appendChild(h('div',{class:'lr-empty'},'찾는 중…'));
+  kakaoReady(function(ok){
+    if(!ok){res.textContent='';res.appendChild(h('div',{class:'lr-empty'},'지도 검색을 불러오지 못했어요. 장소 이름만 저장할 수 있어요.'));return}
+    new kakao.maps.services.Places().keywordSearch(q,function(data,status){
+      res.textContent='';
+      if(status!==kakao.maps.services.Status.OK||!data.length){res.appendChild(h('div',{class:'lr-empty'},'검색 결과가 없어요. 다른 이름이나 주소로 찾아보세요.'));return}
+      data.slice(0,8).forEach(function(p){
+        var addr=p.road_address_name||p.address_name||'';
+        res.appendChild(h('button',{type:'button',class:'lr',onclick:function(){
+          locSel={name:p.place_name,addr:addr,lat:+(+p.y).toFixed(6),lng:+(+p.x).toFixed(6)};
+          $('#evLoc').value=p.place_name;res.hidden=true;locShowSel();
+        }},h('b',{},p.place_name),h('span',{},addr+(p.category_group_name?' · '+p.category_group_name:''))));
+      });
+    },{size:8});
+  });
+}
+function locBind(){
+  $('#evLocBtn').onclick=locSearch;
+  $('#evLoc').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();locSearch()}});
+  $('#evLoc').addEventListener('input',function(){
+    if(locSel&&$('#evLoc').value.trim()!==locSel.name){locSel=null;locShowSel()}
+  });
+  $('#evLocClear').onclick=function(){$('#evLoc').value='';locSel=null;$('#evLocRes').hidden=true;locShowSel()};
 }
 /* 할 일 누르면: 보기 → 완료 / 수정하기 */
 var tdv={d:'',id:''};
@@ -1207,6 +1307,7 @@ function evvBind(){
   $('#tdvCancel').onclick=function(){tdvMode(false)};
   $('#tdvSave').onclick=tdvSave;$('#tdvDel').onclick=tdvDelete;
   $('#tdvIn').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing)tdvSave()});
+  locBind();
 }
 
 /* ---------- 하루 (일정 · 할 일 · 메모) ---------- */
@@ -1516,6 +1617,7 @@ function openEv(id,date){
   $('#evEnd').value=e?(e.end||''):'10:00';
   $('#evNote').value=e?(e.note||''):'';
   $('#evLoc').value=e?(e.loc||''):'';
+  locPickInit(e);
   /*CYCLE*/shEvUI(e);/*/CYCLE*/
   $('#evDel').style.display=e?'':'none';
   syncAll();
@@ -1538,7 +1640,7 @@ function saveEv(){
     cat:cat,
     color:cat?catColor(cat):(old&&old.color)||FALLBACK,
     note:$('#evNote').value.trim(),
-    loc:$('#evLoc').value.trim(),
+    loc:$('#evLoc').value.trim(),addr:locPicked('addr'),lat:locPicked('lat'),lng:locPicked('lng'),
     /*CYCLE*/sh:$('#evSh').disabled?!!(old&&old.sh):$('#evSh').checked,/*/CYCLE*/
     u:Date.now()
   };
@@ -1970,7 +2072,7 @@ function shTime(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',m
 function cyAfterSync(){shPushSoon()}
 function shPushSoon(){if(!shReady())return;clearTimeout(sh.timer);sh.timer=setTimeout(shPush,2000)}
 function shMine(){
-  var evs=S.events.filter(function(e){return e.sh}).map(function(e){return {id:e.id,title:e.title,date:e.date,endDate:e.endDate||'',allDay:!!e.allDay,start:e.start||'',end:e.end||'',note:e.note||'',loc:e.loc||'',u:e.u||0}}).sort(byId);
+  var evs=S.events.filter(function(e){return e.sh}).map(function(e){return {id:e.id,title:e.title,date:e.date,endDate:e.endDate||'',allDay:!!e.allDay,start:e.start||'',end:e.end||'',note:e.note||'',loc:e.loc||'',addr:e.addr||'',lat:e.lat||null,lng:e.lng||null,u:e.u||0}}).sort(byId);
   var cyc=cy.mode==='self'?S.cycle.map(function(x){return {id:x.id,s:x.s,e:x.e||'',u:x.u||0}}).sort(byId):[];
   return {events:evs,cycle:cyc};
 }
@@ -2046,7 +2148,7 @@ function shView(e){
   var w=e.date+(e.endDate&&e.endDate>e.date?' ~ '+e.endDate:'');
   w+=e.allDay?' · 종일':(e.start?' · '+e.start+(e.end?' ~ '+e.end:''):'');
   $('#shvW').textContent=w;$('#shvN').textContent=e.note||'';
-  var sl=$('#shvLoc');sl.textContent='';sl.hidden=!e.loc;if(e.loc)sl.appendChild(locBlock(e.loc));
+  var sl=$('#shvLoc');sl.textContent='';sl.hidden=!e.loc;if(e.loc)sl.appendChild(locBlock(e));
   $('#shvOv').classList.add('open');
 }
 function shEvUI(e){   // 일정 창의 "상대에게 공유" 체크박스 — 공유 연결 전에는 눌리지 않게 흐리게 보여 줌
