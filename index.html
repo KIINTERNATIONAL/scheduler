@@ -313,6 +313,16 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 .evvc .tag{font-size:10.5px;color:var(--shc);border:1px solid var(--shc);border-radius:8px;padding:0 6px}
 #evvT{font-size:19px;font-weight:700;line-height:1.35;word-break:break-word;margin:0 0 6px;padding:0;border:0}
 #evvW{font-size:13.5px;color:var(--ink);padding-bottom:12px;border-bottom:1.5px solid var(--ink)}
+.loc{margin-top:12px;padding:10px 12px;border:1px solid var(--line2);border-radius:8px}
+.loc .lt{display:flex;flex-direction:column;gap:1px}
+.loc .lt small{font-size:10.5px;letter-spacing:.14em;color:var(--sub)}
+.loc .lt span{font-size:14px;word-break:break-word}
+.loc .lk{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.loc .lk a{font-size:12px;color:var(--ink);text-decoration:none;border:1px solid var(--line2);border-radius:14px;padding:3px 10px}
+.loc .lk a:hover{background:var(--hover)}
+#tdvT{font-size:18px;font-weight:700;line-height:1.4;word-break:break-word;margin:0 0 6px;padding:0;border:0}
+#tdvT.done{text-decoration:line-through;color:var(--sub)}
+#tdvW{font-size:13.5px;padding-bottom:12px;border-bottom:1.5px solid var(--ink)}
 #evvN{white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.65;margin-top:12px;max-height:50vh;overflow:auto}
 .cell{touch-action:manipulation}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:10px 16px;border-radius:8px;z-index:80;display:none;max-width:90vw;font-size:13px}
@@ -474,6 +484,7 @@ button,select{font:inherit;color:inherit;cursor:pointer}
     <h2 id="shvH">공유된 일정</h2>
     <div style="font-size:17px;font-weight:700;margin-top:6px" id="shvT"></div>
     <div class="note" id="shvW" style="margin-top:6px"></div>
+    <div id="shvLoc" hidden></div>
     <div class="vnote" id="shvN" style="min-height:0;margin-top:10px"></div>
     <div class="mfoot"><div class="sp"></div><button class="btn primary" id="shvClose">닫기</button></div>
   </div>
@@ -485,8 +496,23 @@ button,select{font:inherit;color:inherit;cursor:pointer}
     <div class="evvc" id="evvCat"></div>
     <h2 id="evvT"></h2>
     <div id="evvW"></div>
+    <div id="evvLoc" hidden></div>
     <div id="evvN"></div>
     <div class="mfoot"><button class="btn" id="evvClose">닫기</button><div class="sp"></div><button class="btn primary" id="evvEdit">수정하기</button></div>
+  </div>
+</div>
+<!-- todo view (보기) -->
+<div class="ov" id="tdvOv">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="evvc" id="tdvCat"></div>
+    <div id="tdvView"><h2 id="tdvT"></h2><div id="tdvW"></div></div>
+    <div id="tdvEditBox" hidden>
+      <h2>할 일 수정</h2>
+      <input type="text" id="tdvIn" maxlength="200">
+      <div class="row"><div><label>날짜 (바꾸면 그날로 옮겨져요)</label><input type="date" id="tdvDate"></div><div><label>분류</label><select id="tdvCatSel"></select></div></div>
+    </div>
+    <div class="mfoot" id="tdvF1"><button class="btn" id="tdvClose">닫기</button><div class="sp"></div><button class="btn" id="tdvToggle">완료</button><button class="btn primary" id="tdvEdit">수정하기</button></div>
+    <div class="mfoot" id="tdvF2" hidden><button class="btn danger" id="tdvDel">삭제</button><div class="sp"></div><button class="btn" id="tdvCancel">취소</button><button class="btn primary" id="tdvSave">저장</button></div>
   </div>
 </div>
 <!-- event modal -->
@@ -505,8 +531,10 @@ button,select{font:inherit;color:inherit;cursor:pointer}
       <div><label>시작 시간</label><input type="time" id="evStart"></div>
       <div><label>종료 시간</label><input type="time" id="evEnd"></div>
     </div>
+    <label>장소</label>
+    <input type="text" id="evLoc" placeholder="예: 북한산 우이동 입구, 서울 강북구 삼양로 …" autocomplete="off">
     <label>메모</label>
-    <textarea id="evNote" placeholder="장소, 메모 등"></textarea>
+    <textarea id="evNote" placeholder="메모"></textarea>
     <!--CYCLE--><label class="chk" id="evShWrap"><input type="checkbox" id="evSh"> <span id="evShName">상대에게 이 일정 공유</span></label><!--/CYCLE-->
     <div class="mfoot">
       <button class="btn danger" id="evDel">삭제</button>
@@ -929,11 +957,13 @@ function evNode(e,d){
   el.addEventListener('click',function(ev){ev.stopPropagation();showEv(e.id)});
   return el;
 }
-function todoNode(t){
+function todoNode(t,d){
   var c=todoColor(t);
   var ck=h('span',{class:'ck',title:'체크'});
   ck.addEventListener('click',function(ev){ev.stopPropagation();toggleTodo(t)});
-  return h('div',{class:'it td'+(t.d?' done':''),style:'color:'+c},ck,h('span',{class:'tx'},t.t));
+  var el=h('div',{class:'it td'+(t.d?' done':''),style:'color:'+c},ck,h('span',{class:'tx'},t.t));
+  el.addEventListener('click',function(ev){ev.stopPropagation();showTodo(d,t.id)});
+  return el;
 }
 function fitItems(box){
   var nodes=[].slice.call(box.children),hidden=0,more=null;
@@ -973,7 +1003,7 @@ function monthEl(mode,opts){
       /*CYCLE*/cyCell(s,cell,box);/*/CYCLE*/
       eventsOn(s).forEach(function(e){box.appendChild(evNode(e,s))});
       /*CYCLE*/shCell(s,box);/*/CYCLE*/
-      tl.slice().sort(function(a,b){return (a.d?1:0)-(b.d?1:0)}).forEach(function(t){box.appendChild(todoNode(t))});
+      tl.slice().sort(function(a,b){return (a.d?1:0)-(b.d?1:0)}).forEach(function(t){box.appendChild(todoNode(t,s))});
       cell.appendChild(box);
       if(de||mmap[s]){var mk=h('span',{class:'mks'});if(de)mk.appendChild(h('i',{title:'다이어리'}));if(mmap[s])mk.appendChild(h('i',{class:'m',title:'메모'}));cell.appendChild(mk)}
       cell.addEventListener('click',(function(s){return function(){dayTap(s)}})(s));
@@ -1108,11 +1138,75 @@ function showEv(id){
   $('#evvW').textContent=evWhen(e);
   $('#evvN').textContent=e.note||'';
   $('#evvN').hidden=!e.note;
+  var lc=$('#evvLoc');lc.textContent='';lc.hidden=!e.loc;
+  if(e.loc)lc.appendChild(locBlock(e.loc));
   $('#evvOv').classList.add('open');
+}
+/* 장소: 이름·주소를 저장해 두고 지도 앱에서 바로 찾기 */
+function locBlock(q){
+  var u=encodeURIComponent(q);
+  return h('div',{class:'loc'},
+    h('div',{class:'lt'},h('small',{},'장소'),h('span',{},q)),
+    h('div',{class:'lk'},
+      h('a',{href:'https://map.naver.com/p/search/'+u,target:'_blank',rel:'noopener'},'네이버 지도'),
+      h('a',{href:'https://map.kakao.com/link/search/'+u,target:'_blank',rel:'noopener'},'카카오맵'),
+      h('a',{href:'https://www.google.com/maps/search/?api=1&query='+u,target:'_blank',rel:'noopener'},'구글 지도')));
+}
+/* 할 일 누르면: 보기 → 완료 / 수정하기 */
+var tdv={d:'',id:''};
+function todoFind(d,id){return (S.todos[d]||[]).filter(function(x){return x.id===id})[0]||null}
+function showTodo(d,id){
+  var t=todoFind(d,id);if(!t)return;
+  tdv={d:d,id:id};
+  var c=catOf(t.c),box=$('#tdvCat');box.textContent='';
+  box.appendChild(h('span',{class:'dot',style:'background:'+todoColor(t)}));
+  box.appendChild(h('span',{},'할 일 · '+(c?c.name:'분류 없음')));
+  $('#tdvT').textContent=t.t;$('#tdvT').classList.toggle('done',!!t.d);
+  var dt=parse(d);
+  $('#tdvW').textContent=(dt.getMonth()+1)+'월 '+dt.getDate()+'일 ('+DOW[dt.getDay()]+') · '+(t.d?'완료':'아직 안 함');
+  $('#tdvToggle').textContent=t.d?'완료 취소':'완료';
+  tdvMode(false);
+  $('#tdvOv').classList.add('open');
+}
+function tdvMode(edit){
+  $('#tdvView').hidden=edit;$('#tdvEditBox').hidden=!edit;$('#tdvF1').hidden=edit;$('#tdvF2').hidden=!edit;
+  if(edit){
+    var t=todoFind(tdv.d,tdv.id);if(!t)return;
+    $('#tdvIn').value=t.t;$('#tdvDate').value=tdv.d;
+    var s0=$('#tdvCatSel');s0.textContent='';s0.appendChild(h('option',{value:''},'(분류 없음)'));
+    S.cats.forEach(function(c){s0.appendChild(h('option',{value:c.id},c.name))});
+    s0.value=t.c||'';
+    setTimeout(function(){$('#tdvIn').focus()},30);
+  }
+}
+function tdvSave(){
+  var t=todoFind(tdv.d,tdv.id);if(!t)return;
+  var v=$('#tdvIn').value.trim();if(!v){toast('할 일을 입력하세요');return}
+  var nd=$('#tdvDate').value||tdv.d;
+  t.t=v;t.c=$('#tdvCatSel').value||'';t.u=Date.now();
+  if(nd!==tdv.d){
+    S.todos[tdv.d]=S.todos[tdv.d].filter(function(x){return x.id!==t.id});
+    if(!S.todos[tdv.d].length)delete S.todos[tdv.d];
+    (S.todos[nd]=S.todos[nd]||[]).push(t);
+  }
+  touch();$('#tdvOv').classList.remove('open');render();
+}
+function tdvDelete(){
+  var t=todoFind(tdv.d,tdv.id);if(!t)return;
+  if(!confirm('이 할 일을 삭제할까요?'))return;
+  S.todos[tdv.d]=S.todos[tdv.d].filter(function(x){return x.id!==t.id});
+  if(!S.todos[tdv.d].length)delete S.todos[tdv.d];
+  S.tomb[t.id]=Date.now();touch();$('#tdvOv').classList.remove('open');render();
 }
 function evvBind(){
   $('#evvClose').onclick=function(){$('#evvOv').classList.remove('open')};
   $('#evvEdit').onclick=function(){$('#evvOv').classList.remove('open');if(evvId)openEv(evvId)};
+  $('#tdvClose').onclick=function(){$('#tdvOv').classList.remove('open')};
+  $('#tdvToggle').onclick=function(){var t=todoFind(tdv.d,tdv.id);if(t){toggleTodo(t);showTodo(tdv.d,tdv.id)}};
+  $('#tdvEdit').onclick=function(){tdvMode(true)};
+  $('#tdvCancel').onclick=function(){tdvMode(false)};
+  $('#tdvSave').onclick=tdvSave;$('#tdvDel').onclick=tdvDelete;
+  $('#tdvIn').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing)tdvSave()});
 }
 
 /* ---------- 하루 (일정 · 할 일 · 메모) ---------- */
@@ -1149,6 +1243,7 @@ function dayPanel(d,o){
       h('span',{class:'tm'},timeLabel(e,d)),
       h('span',{class:'bar',style:'background:'+evColor(e)}),
       h('span',{class:'tt'},e.title,/*CYCLE*/e.sh?h('span',{class:'tag'},'공유'):null,/*/CYCLE*/
+        e.loc?h('div',{class:'enote'},'장소 · '+e.loc):null,
         e.note?h('div',{class:'enote'},e.note):null)));
   });
   /*CYCLE*/shCard(d,el,true);/*/CYCLE*/
@@ -1166,7 +1261,7 @@ function dayPanel(d,o){
       var i=ids.indexOf(t.c||'');t.c=ids[(i+1)%ids.length];t.u=Date.now();touch();render();
     });
     el.appendChild(h('div',{class:'todo'+(t.d?' done':''),'data-id':t.id},cb,dot,
-      h('span',{class:'tx',ondblclick:function(){editTodo(d,t)}},t.t),
+      h('span',{class:'tx',style:'cursor:pointer',onclick:function(){showTodo(d,t.id)}},t.t),
       h('button',{class:'x',title:'삭제','aria-label':'삭제',onclick:function(){
         S.todos[d]=S.todos[d].filter(function(x){return x.id!==t.id});
         if(!S.todos[d].length)delete S.todos[d];
@@ -1290,7 +1385,7 @@ function weekRow(d,td){
     any=true;
     var ck=h('span',{class:'ck',style:'color:'+todoColor(t),title:'체크'});
     ck.addEventListener('click',function(ev){ev.stopPropagation();toggleTodo(t)});
-    c.appendChild(h('div',{class:'wl'+(t.d?' done':'')},ck,h('span',{class:'tx'},t.t)));
+    c.appendChild(h('div',{class:'wl wev'+(t.d?' done':''),onclick:function(ev){ev.stopPropagation();showTodo(d,t.id)}},ck,h('span',{class:'tx'},t.t)));
   });
   var mm=S.memos.filter(function(m){return m.d===d&&(m.t||'').trim()});
   if(mm.length){any=true;c.appendChild(h('div',{class:'wmemo'},'메모 · '+mm[mm.length-1].t.trim().split('\n')[0]+(mm.length>1?' 외 '+(mm.length-1)+'개':'')))}
@@ -1420,6 +1515,7 @@ function openEv(id,date){
   $('#evStart').value=e?(e.start||''):'09:00';
   $('#evEnd').value=e?(e.end||''):'10:00';
   $('#evNote').value=e?(e.note||''):'';
+  $('#evLoc').value=e?(e.loc||''):'';
   /*CYCLE*/shEvUI(e);/*/CYCLE*/
   $('#evDel').style.display=e?'':'none';
   syncAll();
@@ -1442,6 +1538,7 @@ function saveEv(){
     cat:cat,
     color:cat?catColor(cat):(old&&old.color)||FALLBACK,
     note:$('#evNote').value.trim(),
+    loc:$('#evLoc').value.trim(),
     /*CYCLE*/sh:$('#evSh').disabled?!!(old&&old.sh):$('#evSh').checked,/*/CYCLE*/
     u:Date.now()
   };
@@ -1873,7 +1970,7 @@ function shTime(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',m
 function cyAfterSync(){shPushSoon()}
 function shPushSoon(){if(!shReady())return;clearTimeout(sh.timer);sh.timer=setTimeout(shPush,2000)}
 function shMine(){
-  var evs=S.events.filter(function(e){return e.sh}).map(function(e){return {id:e.id,title:e.title,date:e.date,endDate:e.endDate||'',allDay:!!e.allDay,start:e.start||'',end:e.end||'',note:e.note||'',u:e.u||0}}).sort(byId);
+  var evs=S.events.filter(function(e){return e.sh}).map(function(e){return {id:e.id,title:e.title,date:e.date,endDate:e.endDate||'',allDay:!!e.allDay,start:e.start||'',end:e.end||'',note:e.note||'',loc:e.loc||'',u:e.u||0}}).sort(byId);
   var cyc=cy.mode==='self'?S.cycle.map(function(x){return {id:x.id,s:x.s,e:x.e||'',u:x.u||0}}).sort(byId):[];
   return {events:evs,cycle:cyc};
 }
@@ -1949,6 +2046,7 @@ function shView(e){
   var w=e.date+(e.endDate&&e.endDate>e.date?' ~ '+e.endDate:'');
   w+=e.allDay?' · 종일':(e.start?' · '+e.start+(e.end?' ~ '+e.end:''):'');
   $('#shvW').textContent=w;$('#shvN').textContent=e.note||'';
+  var sl=$('#shvLoc');sl.textContent='';sl.hidden=!e.loc;if(e.loc)sl.appendChild(locBlock(e.loc));
   $('#shvOv').classList.add('open');
 }
 function shEvUI(e){   // 일정 창의 "상대에게 공유" 체크박스 — 공유 연결 전에는 눌리지 않게 흐리게 보여 줌
@@ -2386,7 +2484,7 @@ function offSync(){
 /* ---------- wire up ---------- */
 function closeAll(){
   closeDiary();
-  ['#evOv','#evvOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){$(s).classList.remove('open')});
+  ['#evOv','#evvOv','#tdvOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){$(s).classList.remove('open')});
   $('#menu').classList.remove('open');
 }
 function bind(){
@@ -2396,7 +2494,7 @@ function bind(){
   $('#addEvBtn').onclick=function(){openEv(null,sel)};
   $('#evSave').onclick=saveEv;$('#evCancel').onclick=closeEv;$('#evDel').onclick=delEv;
   $('#evAll').onchange=syncAll;
-  ['#evOv','#evvOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){
+  ['#evOv','#evvOv','#tdvOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){
     $(s).addEventListener('mousedown',function(e){if(e.target===this)this.classList.remove('open')});
   });
   $('#vClose').onclick=closeDiary;$('#eDel').onclick=deleteDiary;$('#eBack').onclick=backDiary;$('#dDone').onclick=finishDiary;
