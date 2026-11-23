@@ -308,6 +308,13 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 .arow .ai{font-size:10.5px;flex:none;border:1px solid currentColor;border-radius:8px;padding:0 6px}
 .arow .ai.ann{color:#c2185b}.arow .ai.bd{color:#7b3fa8}
 .arow .am{flex:1;min-width:0}.arow .am b{font-size:14px}.arow .am div{font-size:12px;color:var(--sub);line-height:1.5}
+.evvc{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--sub);margin-bottom:8px;flex-wrap:wrap}
+.evvc .dot{width:9px;height:9px;border-radius:50%}
+.evvc .tag{font-size:10.5px;color:var(--shc);border:1px solid var(--shc);border-radius:8px;padding:0 6px}
+#evvT{font-size:19px;font-weight:700;line-height:1.35;word-break:break-word;margin:0 0 6px;padding:0;border:0}
+#evvW{font-size:13.5px;color:var(--ink);padding-bottom:12px;border-bottom:1.5px solid var(--ink)}
+#evvN{white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.65;margin-top:12px;max-height:50vh;overflow:auto}
+.cell{touch-action:manipulation}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:10px 16px;border-radius:8px;z-index:80;display:none;max-width:90vw;font-size:13px}
 .toast.show{display:block}
 
@@ -472,6 +479,16 @@ button,select{font:inherit;color:inherit;cursor:pointer}
   </div>
 </div>
 <!--/CYCLE-->
+<!-- event view (보기) -->
+<div class="ov" id="evvOv">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="evvc" id="evvCat"></div>
+    <h2 id="evvT"></h2>
+    <div id="evvW"></div>
+    <div id="evvN"></div>
+    <div class="mfoot"><button class="btn" id="evvClose">닫기</button><div class="sp"></div><button class="btn primary" id="evvEdit">수정하기</button></div>
+  </div>
+</div>
 <!-- event modal -->
 <div class="ov" id="evOv">
   <div class="modal" role="dialog" aria-modal="true">
@@ -909,7 +926,7 @@ function evNode(e,d){
     el=h('div',{class:'it e'/*CYCLE*/+(e.sh?' shd':'')/*/CYCLE*/},h('span',{class:'bar',style:'background:'+c}),
       (e.date===d&&e.start)?h('span',{class:'tm'},e.start):null,h('span',{class:'tx'},e.title));
   }
-  el.addEventListener('click',function(ev){ev.stopPropagation();openEv(e.id)});
+  el.addEventListener('click',function(ev){ev.stopPropagation();showEv(e.id)});
   return el;
 }
 function todoNode(t){
@@ -959,8 +976,7 @@ function monthEl(mode,opts){
       tl.slice().sort(function(a,b){return (a.d?1:0)-(b.d?1:0)}).forEach(function(t){box.appendChild(todoNode(t))});
       cell.appendChild(box);
       if(de||mmap[s]){var mk=h('span',{class:'mks'});if(de)mk.appendChild(h('i',{title:'다이어리'}));if(mmap[s])mk.appendChild(h('i',{class:'m',title:'메모'}));cell.appendChild(mk)}
-      cell.addEventListener('click',(function(s){return function(){selectDay(s)}})(s));
-      cell.addEventListener('dblclick',(function(s){return function(){openEv(null,s)}})(s));
+      cell.addEventListener('click',(function(s){return function(){dayTap(s)}})(s));
     }else if(mode==='ph'){
       /*CYCLE*/var cyr=cyOn(s)[0];if(cyr)cell.appendChild(h('span',{class:'cyb '+cyr.k}));/*/CYCLE*/
       if(ph){
@@ -1065,6 +1081,40 @@ function monthHead(sub){
     function(){shiftMonth(-1)},function(){shiftMonth(1)});
 }
 
+/* 날짜 칸: 한 번 누르면 선택, 같은 칸을 빠르게 두 번 누르면 새 일정 (PC 더블클릭 · 폰 두 번 탭 모두) */
+var lastTap={d:'',t:0};
+function dayTap(s){
+  var now=Date.now();
+  if(lastTap.d===s&&now-lastTap.t<400){lastTap={d:'',t:0};sel=s;openEv(null,s);return}
+  lastTap={d:s,t:now};selectDay(s);
+}
+/* 일정 누르면: 먼저 내용 보기 → 아래 "수정하기" */
+var evvId=null;
+function evWhen(e){
+  function f(d){var dt=parse(d);return (dt.getMonth()+1)+'월 '+dt.getDate()+'일 ('+DOW[dt.getDay()]+')'}
+  var y=parse(e.date).getFullYear()!==parse(todayS()).getFullYear()?parse(e.date).getFullYear()+'년 ':'';
+  var w=y+f(e.date)+(e.endDate&&e.endDate>e.date?' ~ '+f(e.endDate):'');
+  return w+(e.allDay?' · 종일':(e.start?' · '+e.start+(e.end?' ~ '+e.end:''):''));
+}
+function showEv(id){
+  var e=S.events.filter(function(x){return x.id===id})[0];if(!e)return;
+  evvId=id;
+  var c=catOf(e.cat),col=evColor(e);
+  var box=$('#evvCat');box.textContent='';
+  box.appendChild(h('span',{class:'dot',style:'background:'+col}));
+  box.appendChild(h('span',{},c?c.name:'분류 없음'));
+  /*CYCLE*/if(e.sh)box.appendChild(h('span',{class:'tag'},shName()+'에게 공유 중'));/*/CYCLE*/
+  $('#evvT').textContent=e.title||'(제목 없음)';
+  $('#evvW').textContent=evWhen(e);
+  $('#evvN').textContent=e.note||'';
+  $('#evvN').hidden=!e.note;
+  $('#evvOv').classList.add('open');
+}
+function evvBind(){
+  $('#evvClose').onclick=function(){$('#evvOv').classList.remove('open')};
+  $('#evvEdit').onclick=function(){$('#evvOv').classList.remove('open');if(evvId)openEv(evvId)};
+}
+
 /* ---------- 하루 (일정 · 할 일 · 메모) ---------- */
 function dayHead(d,nav){
   var dt=parse(d),td=todayS();
@@ -1095,7 +1145,7 @@ function dayPanel(d,o){
   el.appendChild(secHead('SCHEDULE',h('button',{class:'mini',onclick:function(){openEv(null,d)}},'+ 일정')));
   var evs=eventsOn(d);
   evs.forEach(function(e){
-    el.appendChild(h('div',{class:'ev',onclick:function(){openEv(e.id)}},
+    el.appendChild(h('div',{class:'ev',onclick:function(){showEv(e.id)}},
       h('span',{class:'tm'},timeLabel(e,d)),
       h('span',{class:'bar',style:'background:'+evColor(e)}),
       h('span',{class:'tt'},e.title,/*CYCLE*/e.sh?h('span',{class:'tag'},'공유'):null,/*/CYCLE*/
@@ -1230,7 +1280,7 @@ function weekRow(d,td){
   annOn(d).forEach(function(r){any=true;c.appendChild(h('div',{class:'wl mk '+r.k},h('span',{class:'tx'},r.text)))});
   eventsOn(d).forEach(function(e){
     any=true;
-    c.appendChild(h('div',{class:'wl wev',title:'눌러서 일정 수정',onclick:function(ev){ev.stopPropagation();openEv(e.id)}},h('span',{class:'bar',style:'background:'+evColor(e)}),h('span',{class:'tm'},timeLabel(e,d)),h('span',{class:'tx'},e.title)));
+    c.appendChild(h('div',{class:'wl wev',title:'눌러서 일정 보기',onclick:function(ev){ev.stopPropagation();showEv(e.id)}},h('span',{class:'bar',style:'background:'+evColor(e)}),h('span',{class:'tm'},timeLabel(e,d)),h('span',{class:'tx'},e.title)));
   });
   /*CYCLE*/shEvOn(d).forEach(function(e){
     any=true;
@@ -2336,16 +2386,17 @@ function offSync(){
 /* ---------- wire up ---------- */
 function closeAll(){
   closeDiary();
-  ['#evOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){$(s).classList.remove('open')});
+  ['#evOv','#evvOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){$(s).classList.remove('open')});
   $('#menu').classList.remove('open');
 }
 function bind(){
   $('#todayBtn').onclick=function(){selectDay(todayS())};
   [].forEach.call(document.querySelectorAll('#tabs button'),function(b){b.onclick=function(){setTab(b.getAttribute('data-t'))}});
+  evvBind();
   $('#addEvBtn').onclick=function(){openEv(null,sel)};
   $('#evSave').onclick=saveEv;$('#evCancel').onclick=closeEv;$('#evDel').onclick=delEv;
   $('#evAll').onchange=syncAll;
-  ['#evOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){
+  ['#evOv','#evvOv','#helpOv','#syncOv','#catOv','#annOv'/*CYCLE*/,'#cyOv','#shOv','#shvOv'/*/CYCLE*/].forEach(function(s){
     $(s).addEventListener('mousedown',function(e){if(e.target===this)this.classList.remove('open')});
   });
   $('#vClose').onclick=closeDiary;$('#eDel').onclick=deleteDiary;$('#eBack').onclick=backDiary;$('#dDone').onclick=finishDiary;
