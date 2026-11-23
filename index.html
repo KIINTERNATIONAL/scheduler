@@ -349,7 +349,7 @@ button,select{font:inherit;color:inherit;cursor:pointer}
   .tabs button{writing-mode:horizontal-tb;flex:1;border:1px solid var(--line2);border-radius:0;padding:9px 0;margin-left:-1px;font-size:10px;letter-spacing:.12em}
   .tabs button:first-child{border-radius:4px 0 0 4px;margin-left:0}
   .tabs button:last-child{border-radius:0 4px 4px 0}
-  .mon.big .grid{grid-auto-rows:104px}
+  .mon.big .grid{grid-auto-rows:clamp(62px,calc((100vh - 300px) / 6),84px);grid-auto-rows:clamp(62px,calc((100dvh - 300px) / 6),84px)}   /* 아래 날짜 상세가 첫 화면에 걸쳐 보이게 */
   .mon.ph .grid{grid-auto-rows:minmax(0,auto)}
   .mon.ph .cell{aspect-ratio:1/1.5}
   .wr{flex:none;min-height:0}
