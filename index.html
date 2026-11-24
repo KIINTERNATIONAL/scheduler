@@ -407,6 +407,7 @@ button,select{font:inherit;color:inherit;cursor:pointer}
   .mon.big .grid{grid-auto-rows:clamp(62px,calc((100vh - 300px) / 6),84px);grid-auto-rows:clamp(62px,calc((100dvh - 300px) / 6),84px)}   /* 아래 날짜 상세가 첫 화면에 걸쳐 보이게 */
   .mon.ph .grid{grid-auto-rows:minmax(0,auto)}
   .mon.ph .cell{aspect-ratio:1/1.5}
+  .mon.ph.cp .cell{aspect-ratio:auto;height:clamp(50px,calc((100vh - 330px) / 6),62px);height:clamp(50px,calc((100dvh - 330px) / 6),62px)}   /* 해리코지: 달력은 짧게, 아래 그날 페이지가 바로 보이게 */
   .wr{flex:none;min-height:0}
   .dp{margin-top:18px}
   .wkrows .wr:last-child{border-bottom:0}
@@ -1039,7 +1040,7 @@ function monthEl(mode,opts){
   var first=new Date(view.y,view.m,1),start=new Date(view.y,view.m,1-first.getDay());
   var last=new Date(view.y,view.m+1,0),weeks=Math.ceil((first.getDay()+last.getDate())/7);
   var wn=!!opts.weekNo;
-  var mon=h('div',{class:'mon '+(mode==='ev'?'big':mode)+(wn?' wn':'')});
+  var mon=h('div',{class:'mon '+(mode==='ev'?'big':mode)+(wn?' wn':'')+(opts.couple?' cp':'')});
   var dow=h('div',{class:'dow'});if(wn)dow.appendChild(h('div',{}));
   DOW_EN.forEach(function(x,i){dow.appendChild(h('div',{class:i===0?'sun':i===6?'sat':''},x))});
   mon.appendChild(dow);
