@@ -134,6 +134,17 @@ button,select{font:inherit;color:inherit;cursor:pointer}
 .mks{position:absolute;right:5px;bottom:4px;display:flex;gap:3px;pointer-events:none}
 .mks i{width:5px;height:5px;border-radius:50%;background:var(--ink);opacity:.55;display:block}
 .mks i.m{background:transparent;border:1.2px solid var(--ink)}
+.mks i.p{background:var(--shc);opacity:.9}
+.cell .pmk{position:absolute;right:4px;top:4px;z-index:2;min-width:15px;height:15px;border-radius:8px;background:var(--shc);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.cell .dtx.p{color:var(--shc)}
+.wtx.p{color:var(--shc);opacity:1}
+.pdiary{margin-top:24px;padding-top:12px;border-top:1.5px dashed var(--shc)}
+.pdh{color:var(--shc);font-weight:700;font-size:12px;letter-spacing:.08em;margin-bottom:8px}
+.pph{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.pph img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;cursor:zoom-in;background:var(--hover)}
+.shtag{display:inline-block;font-size:10.5px;color:var(--shc);border:1px solid var(--shc);border-radius:8px;padding:0 6px;margin-left:6px;letter-spacing:0}
+.dib>.shtag{margin:0 0 4px;align-self:flex-start}
+.chk.dshare{margin:14px 0 4px;font-size:13px}
 /* 다이어리(사진) 달력 */
 .mon.ph .cell{padding:0}
 .mon.ph .top1{position:absolute;left:4px;top:4px;z-index:2}
@@ -584,6 +595,7 @@ button,select{font:inherit;color:inherit;cursor:pointer}
       <div class="plbl">DIARY</div>
       <textarea id="dTxt" class="lined" placeholder="오늘 하루는 어땠나요?"></textarea>
       <div class="dph" id="dPh"></div>
+      <!--CYCLE--><label class="chk dshare" id="dShWrap"><input type="checkbox" id="dSh"> <span id="dShName">커플 다이어리</span></label><!--/CYCLE-->
       
       <div class="pfoot">
         <button class="btn" id="dAdd">사진 추가</button>
@@ -1007,8 +1019,9 @@ function monthEl(mode,opts){
   for(var i=0;i<weeks*7;i++){
     var d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i),s=ds(d);
     if(wn&&i%7===0)grid.appendChild(h('div',{class:'wkno'},'W'+weekNo(s)));
-    var de=dmap[s],ph=de&&de.photos&&de.photos.length?de.photos:null;
-    var cls='cell'+(i%7===6?' c7':'')+(d.getMonth()!==view.m?' out':'')+(s===td?' today':'')+(s===sel?' sel':'')+' '+dowCls(s)+(mode==='ph'&&ph?' hasp':'');
+    var de=dmap[s],ph=de&&de.photos&&de.photos.length?de.photos:null,pd=shDiary(s);
+    var phKey=ph?ph[0]:(pd&&pd.photos&&pd.photos.length?'sp-'+pd.photos[0]:null),phN=ph?ph.length:(pd&&pd.photos?pd.photos.length:0);
+    var cls='cell'+(i%7===6?' c7':'')+(d.getMonth()!==view.m?' out':'')+(s===td?' today':'')+(s===sel?' sel':'')+' '+dowCls(s)+(mode==='ph'&&phKey?' hasp':'');
     var cell=h('div',{class:cls,'data-d':s,title:holName(s)||''});
     var top=h('div',{class:'top1'},h('span',{class:'num'},''+d.getDate()));
     cell.appendChild(top);
@@ -1023,16 +1036,19 @@ function monthEl(mode,opts){
       /*CYCLE*/shCell(s,box);/*/CYCLE*/
       tl.slice().sort(function(a,b){return (a.d?1:0)-(b.d?1:0)}).forEach(function(t){box.appendChild(todoNode(t,s))});
       cell.appendChild(box);
-      if(de||mmap[s]){var mk=h('span',{class:'mks'});if(de)mk.appendChild(h('i',{title:'다이어리'}));if(mmap[s])mk.appendChild(h('i',{class:'m',title:'메모'}));cell.appendChild(mk)}
+      if(de||mmap[s]||pd){var mk=h('span',{class:'mks'});if(de)mk.appendChild(h('i',{title:'다이어리'}));if(pd)mk.appendChild(h('i',{class:'p',title:shName()+' 다이어리'}));if(mmap[s])mk.appendChild(h('i',{class:'m',title:'메모'}));cell.appendChild(mk)}
       cell.addEventListener('click',(function(s){return function(){dayTap(s)}})(s));
     }else if(mode==='ph'){
       /*CYCLE*/var cyr=cyOn(s)[0];if(cyr)cell.appendChild(h('span',{class:'cyb '+cyr.k}));/*/CYCLE*/
-      if(ph){
-        var img=h('img',{class:'phi',alt:''});setThumb(ph[0],img);cell.appendChild(img);
-        if(ph.length>1)cell.appendChild(h('span',{class:'pcnt'},''+ph.length));
+      if(phKey){
+        var img=h('img',{class:'phi',alt:''});setThumb(phKey,img);cell.appendChild(img);
+        if(phN>1)cell.appendChild(h('span',{class:'pcnt'},''+phN));
       }else if(de&&(de.t||'').trim()){
         cell.appendChild(h('div',{class:'dtx'},de.t.trim()));
+      }else if(pd&&(pd.t||'').trim()){
+        cell.appendChild(h('div',{class:'dtx p'},pd.t.trim()));
       }
+      if(pd)cell.appendChild(h('span',{class:'pmk',title:shName()+'도 썼어요'},shName().slice(0,1)));
       cell.addEventListener('click',(function(s){return function(){if(isWide())selectDay(s);else{sel=s;openDiary(s)}}})(s));
     }else{   // mini
       if(mmap[s]){var mk2=h('span',{class:'mks'});mk2.appendChild(h('i',{}));cell.appendChild(mk2)}
@@ -1309,6 +1325,7 @@ function evvBind(){
   $('#tdvSave').onclick=tdvSave;$('#tdvDel').onclick=tdvDelete;
   $('#tdvIn').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing)tdvSave()});
   locBind();
+  dShBind();
 }
 
 /* ---------- 하루 (일정 · 할 일 · 메모) ---------- */
@@ -1442,8 +1459,10 @@ function diaryPanel(d){
   if(!e){
     el.appendChild(h('div',{class:'diempty'},'이 날의 다이어리가 없어요',h('br'),
       h('button',{class:'btn primary',onclick:function(){openDiaryEdit(d)}},'쓰기')));
+    var pb0=shDiaryBlock(d);if(pb0)el.appendChild(pb0);
     return el;
   }
+  if(e.sh&&shReady())el.appendChild(h('div',{class:'shtag'},shName()+'에게 보여주는 중'));
   var ph=e.photos||[];
   if(ph.length){
     var big=h('img',{alt:''}),cur=0;setThumb(ph[0],big);
@@ -1463,6 +1482,7 @@ function diaryPanel(d){
   el.appendChild(h('div',{class:'diact'},
     h('button',{class:'btn danger',onclick:function(){dDate=d;deleteDiary()}},'삭제'),
     h('button',{class:'btn',onclick:function(){openDiaryEdit(d)}},'수정')));
+  var pb=shDiaryBlock(d);if(pb)el.appendChild(pb);
   return el;
 }
 
@@ -1492,6 +1512,7 @@ function weekRow(d,td){
   var mm=S.memos.filter(function(m){return m.d===d&&(m.t||'').trim()});
   if(mm.length){any=true;c.appendChild(h('div',{class:'wmemo'},'메모 · '+mm[mm.length-1].t.trim().split('\n')[0]+(mm.length>1?' 외 '+(mm.length-1)+'개':'')))}
   if(de&&(de.t||'').trim()){any=true;c.appendChild(h('div',{class:'wtx'},de.t.trim()))}
+  var pdw=shDiary(d);if(pdw){any=true;c.appendChild(h('div',{class:'wtx p'},shName()+' · '+((pdw.t||'').trim()||'사진 '+(pdw.photos||[]).length+'장')))}
   if(!any)c.appendChild(h('div',{class:'wempty'},'—'));
   row.appendChild(c);
   return row;
@@ -1599,6 +1620,85 @@ function render(){
   if(refocus){var f=document.querySelector(refocus);refocus=null;if(f)f.focus()}
 }
 
+/* ---------- 커플 다이어리: 공유한 다이어리를 상대 앱에서 같이 보기 ---------- */
+/* 내 다이어리 중 "보여주기"를 켠 것만 공유 상자(from-<나>.json)에 올라가고, 사진은 shared/<나>/ 폴더에 복사돼요. 상대 것은 읽기만 해요. */
+var DSH_KEY='kojiday-diary-share',SHUP_KEY='scheduler-share-up-v1',shMiss={};
+function shDiary(d){var l=(sh&&sh.cache&&sh.cache.diary)||[];for(var i=0;i<l.length;i++)if(l[i].date===d)return l[i];return null}
+function dShDefault(){if(!shReady())return false;var v=getPref(DSH_KEY,'1');return v!=='0'}
+function dShUI(e){
+  var ok=shReady(),cb=$('#dSh');
+  cb.disabled=!ok;cb.checked=ok&&(e?!!e.sh:dShDefault());
+  $('#dShName').textContent=ok?shName()+'에게도 보여주기 (커플 다이어리)':'커플 다이어리 — 상대와 공유를 먼저 연결해 주세요 (⋯ → 상대와 공유)';
+  $('#dShWrap').style.opacity=ok?'':'.5';
+}
+function dShBind(){
+  $('#dSh').addEventListener('change',function(){
+    var v=$('#dSh').checked;setPref(DSH_KEY,v?'1':'0');
+    if(dEntry(dDate))diarySet(dDate,{sh:v});
+  });
+}
+function shDiaryBlock(d){
+  var x=shDiary(d);if(!x)return null;
+  var box=h('div',{class:'pdiary'},h('div',{class:'pdh'},shName()+'의 하루'));
+  var ph=x.photos||[];
+  if(ph.length){
+    var g=h('div',{class:'pph'});
+    ph.forEach(function(id){
+      var k='sp-'+id,img=h('img',{alt:''});setThumb(k,img);
+      img.addEventListener('click',function(){if(thumbUrl[k])openBig(thumbUrl[k])});
+      g.appendChild(img);
+    });
+    box.appendChild(g);
+  }
+  if((x.t||'').trim())box.appendChild(h('div',{class:'ditext lined'},x.t));
+  return box;
+}
+function shUpGet(){try{return JSON.parse(localStorage.getItem(SHUP_KEY)||'null')||{}}catch(e){return {}}}
+function shUpSet(o){try{localStorage.setItem(SHUP_KEY,JSON.stringify(o))}catch(e){}}
+async function shPhotoUp(b,dia){   // 공유한 다이어리 사진을 공유 상자에 복사 (이미 올린 건 건너뜀, 공유를 끈 사진은 지움)
+  try{
+    var up=shUpGet(),bk=b.owner+'/'+b.repo+'/'+sh.me;
+    if(up.box!==bk)up={box:bk,ids:{}};
+    var need={};(dia||[]).forEach(function(x){(x.photos||[]).forEach(function(id){need[id]=1})});
+    for(var id in need){
+      if(up.ids[id])continue;
+      var v=await pGet(id);if(!v||!v.b)continue;
+      var body={message:'share photo',content:await blobB64(v.b)};if(b.branch)body.branch=b.branch;
+      var r=await tfetch(shURL(b,'shared/'+sh.me+'/'+encodeURIComponent(id),false),{method:'PUT',headers:shHdr(b,{'Content-Type':'application/json'}),body:JSON.stringify(body)},60000);
+      if(r.ok||r.status===422){up.ids[id]=1;shUpSet(up)}
+      else if(r.status===401||r.status===403)return;
+    }
+    for(var oid in up.ids){
+      if(need[oid])continue;
+      var f='shared/'+sh.me+'/'+encodeURIComponent(oid);
+      var g=await tfetch(bust(shURL(b,f,true)),{headers:shHdr(b)});
+      if(g.status===404){delete up.ids[oid];continue}
+      if(!g.ok)continue;
+      var meta=await g.json(),db={message:'unshare photo',sha:meta.sha};if(b.branch)db.branch=b.branch;
+      var dr=await tfetch(shURL(b,f,false),{method:'DELETE',headers:shHdr(b,{'Content-Type':'application/json'}),body:JSON.stringify(db)});
+      if(dr.ok||dr.status===404)delete up.ids[oid];
+    }
+    shUpSet(up);
+  }catch(e){}
+}
+async function shPhotoDown(b,dia){   // 상대가 공유한 사진 받아 두기
+  var ch=false;
+  try{
+    for(var i=0;i<(dia||[]).length;i++){
+      var ph=dia[i].photos||[];
+      for(var j=0;j<ph.length;j++){
+        var id=ph[j],k='sp-'+id,v=await pGet(k);
+        if(v&&v.b)continue;
+        if(shMiss[id]&&Date.now()-shMiss[id]<5*60*1000)continue;
+        var g=await tfetch(bust(shURL(b,'shared/'+shOther()+'/'+encodeURIComponent(id),true)),{headers:shHdr(b,{'Accept':'application/vnd.github.raw+json'})},60000);
+        if(g.ok){await pPut(k,{b:await g.blob(),up:1});ch=true;delete shMiss[id]}
+        else shMiss[id]=Date.now();
+      }
+    }
+  }catch(e){}
+  return ch;
+}
+
 /* ---------- event modal ---------- */
 var editingId=null;
 function syncAll(){$('#timeRow').style.display=$('#evAll').checked?'none':'flex'}
@@ -1662,7 +1762,7 @@ function delEv(){
 function dEntry(date){for(var i=0;i<S.diary.length;i++)if(S.diary[i].date===date)return S.diary[i];return null}
 function diarySet(date,patch){
   var e=dEntry(date),now=Date.now();
-  var n=e?JSON.parse(JSON.stringify(e)):{id:'d-'+date,date:date,t:'',photos:[],s:'',u:0};
+  var n=e?JSON.parse(JSON.stringify(e)):{id:'d-'+date,date:date,t:'',photos:[],s:'',sh:dShDefault(),u:0};
   for(var k in patch)n[k]=patch[k];
   n.u=now;
   var empty=!(n.t||'').trim()&&!(n.photos||[]).length&&!n.s;
@@ -1726,6 +1826,7 @@ function renderView(){
   if(!e){
     body.appendChild(h('div',{class:'vempty'},'이 날은 아직 기록이 없어요',h('br'),
       h('button',{class:'btn primary',onclick:showEdit},'쓰기')));
+    var pb0=shDiaryBlock(dDate);if(pb0)body.appendChild(pb0);
     return;
   }
   var ph=e.photos||[];
@@ -1746,10 +1847,11 @@ function renderView(){
     if(ph.length>1)car.appendChild(cnt);
     body.appendChild(car);
   }
-  body.appendChild(h('div',{class:'vmeta'},DOW_FULL[dt.getDay()]+' · '+dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate()));
+  body.appendChild(h('div',{class:'vmeta'},DOW_FULL[dt.getDay()]+' · '+dt.getFullYear()+'.'+(dt.getMonth()+1)+'.'+dt.getDate(),e.sh&&shReady()?h('span',{class:'shtag'},shName()+'에게 보여주는 중'):null));
   var vn=h('div',{class:'vnote lined'},e.t||'');body.appendChild(vn);
   fitLines(vn);
   body.appendChild(h('div',{class:'vact'},h('button',{class:'btn danger',onclick:deleteDiary},'삭제'),h('button',{class:'btn',onclick:showEdit},'수정')));
+  var pb=shDiaryBlock(dDate);if(pb)body.appendChild(pb);
 }
 /* 줄 칸: 기본 8줄, 글이 8줄을 넘으면 아래로 5줄 더 */
 function fitLines(el){
@@ -1811,12 +1913,13 @@ function showEdit(){
   var e=dEntry(dDate);
   $('#eTitle').textContent=dateLabel(dDate);
   $('#dTxt').value=e?e.t||'':'';
+  /*CYCLE*/dShUI(e);/*/CYCLE*/
   renderDiaryPhotos();$('#diaryOv').scrollTop=0;fitLines($('#dTxt'));
 }
 function openDiary(date){
   dDate=date||todayS();
   $('#diaryOv').classList.add('open');
-  if(dEntry(dDate))showView();else showEdit();
+  if(dEntry(dDate)||shDiary(dDate))showView();else showEdit();
 }
 function closeDiary(){var was=$('#diaryOv').classList.contains('open');flushDiary();revokeUrls();$('#diaryOv').classList.remove('open');$('#imgOv').classList.remove('open');if(was)render()}
 function openDiaryEdit(date){dDate=date||todayS();$('#diaryOv').classList.add('open');showEdit()}
@@ -2045,7 +2148,7 @@ function replaceList(cur,incoming,t){
 /* 공유 상자 = GitHub 저장소 하나. 각자 자기 몫만 from-<이름>.json 으로 올리고, 상대 것은 읽기만 한다. */
 var SH_KEY='scheduler-share-v1',SH_CACHE='scheduler-share-cache-v1',CY_KEY='scheduler-cycle-v1',SH_COLOR='#9b6fd6';
 var SH_NAMES={siyun:'시윤',harry:'해리'};
-var sh={me:'',box:null,cache:{events:[],cycle:[],at:0},err:'',msg:'',pulling:false,pushing:false,pushed:'',timer:null};
+var sh={me:'',box:null,cache:{events:[],cycle:[],diary:[],at:0},err:'',msg:'',pulling:false,pushing:false,pushed:'',timer:null};
 var cy={mode:'off',editId:null};
 var cyMC=null,CY_RANK={f:1,ovl:2,pp:3,p:4};
 function shOther(){return sh.me==='siyun'?'harry':sh.me==='harry'?'siyun':''}
@@ -2053,7 +2156,7 @@ function shName(){return SH_NAMES[shOther()]||'상대'}
 function cyLoad(){
   try{var o=JSON.parse(localStorage.getItem(CY_KEY)||'null');if(o)cy.mode=o.mode||'off'}catch(e){}
   try{var q=JSON.parse(localStorage.getItem(SH_KEY)||'null');if(q){sh.me=q.me||'';sh.box=q.box||null}}catch(e){}
-  try{var c=JSON.parse(localStorage.getItem(SH_CACHE)||'null');if(c)sh.cache={events:Array.isArray(c.events)?c.events:[],cycle:Array.isArray(c.cycle)?c.cycle:[],at:c.at||0}}catch(e){}
+  try{var c=JSON.parse(localStorage.getItem(SH_CACHE)||'null');if(c)sh.cache={events:Array.isArray(c.events)?c.events:[],cycle:Array.isArray(c.cycle)?c.cycle:[],diary:Array.isArray(c.diary)?c.diary:[],at:c.at||0}}catch(e){}
 }
 function cySaveCfg(){try{localStorage.setItem(CY_KEY,JSON.stringify({mode:cy.mode}))}catch(e){}}
 function shSaveCfg(){try{localStorage.setItem(SH_KEY,JSON.stringify({me:sh.me,box:sh.box}))}catch(e){}}
@@ -2075,24 +2178,25 @@ function shPushSoon(){if(!shReady())return;clearTimeout(sh.timer);sh.timer=setTi
 function shMine(){
   var evs=S.events.filter(function(e){return e.sh}).map(function(e){return {id:e.id,title:e.title,date:e.date,endDate:e.endDate||'',allDay:!!e.allDay,start:e.start||'',end:e.end||'',note:e.note||'',loc:e.loc||'',addr:e.addr||'',lat:e.lat||null,lng:e.lng||null,u:e.u||0}}).sort(byId);
   var cyc=cy.mode==='self'?S.cycle.map(function(x){return {id:x.id,s:x.s,e:x.e||'',u:x.u||0}}).sort(byId):[];
-  return {events:evs,cycle:cyc};
+  var dia=S.diary.filter(function(x){return x.sh&&((x.t||'').trim()||(x.photos||[]).length)}).map(function(x){return {id:x.id,date:x.date,t:x.t||'',photos:(x.photos||[]).slice(),u:x.u||0}}).sort(byId);
+  return {events:evs,cycle:cyc,diary:dia};
 }
 async function shPush(){
   var b=shBox();
   if(!b||!sh.me||sh.pushing)return;
   sh.pushing=true;
   try{
-    var mine=shMine(),key=stable({e:mine.events,c:mine.cycle});
-    if(key===sh.pushed)return;
+    var mine=shMine(),key=stable({e:mine.events,c:mine.cycle,d:mine.diary});
+    if(key===sh.pushed){await shPhotoUp(b,mine.diary);return}
     var file='from-'+sh.me+'.json',sha=null,g=await tfetch(bust(shURL(b,file,true)),{headers:shHdr(b)});
     if(g.ok){
       var j=await g.json();sha=j.sha;
-      try{var old=JSON.parse(b64dec(j.content));if(stable({e:(old.events||[]).slice().sort(byId),c:(old.cycle||[]).slice().sort(byId)})===key){sh.pushed=key;return}}catch(e){}
+      try{var old=JSON.parse(b64dec(j.content));if(stable({e:(old.events||[]).slice().sort(byId),c:(old.cycle||[]).slice().sort(byId),d:(old.diary||[]).slice().sort(byId)})===key){sh.pushed=key;await shPhotoUp(b,mine.diary);return}}catch(e){}
     }else if(g.status!==404)throw httpErr(g.status);
-    var body={message:'share '+new Date().toISOString(),content:b64enc(JSON.stringify({events:mine.events,cycle:mine.cycle,at:Date.now()}))};
+    var body={message:'share '+new Date().toISOString(),content:b64enc(JSON.stringify({events:mine.events,cycle:mine.cycle,diary:mine.diary,at:Date.now()}))};
     if(sha)body.sha=sha;if(b.branch)body.branch=b.branch;
     var p=await tfetch(shURL(b,file,false),{method:'PUT',headers:shHdr(b,{'Content-Type':'application/json'}),body:JSON.stringify(body)});
-    if(p.ok){sh.pushed=key;sh.msg='내 공유 올림 '+shTime()+' (일정 '+mine.events.length+'개'+(cy.mode==='self'?' · 주기 기록 '+mine.cycle.length+'건':'')+')'}
+    if(p.ok){sh.pushed=key;sh.msg='내 공유 올림 '+shTime()+' (일정 '+mine.events.length+'개 · 다이어리 '+mine.diary.length+'일'+(cy.mode==='self'?' · 주기 기록 '+mine.cycle.length+'건':'')+')';await shPhotoUp(b,mine.diary)}
     else if(p.status===409||p.status===422){sh.timer=setTimeout(shPush,1500)}   // 그 사이 바뀜 → 곧 다시
     else throw httpErr(p.status);
   }catch(e){sh.msg='공유 올리기 실패: '+((e&&e.message)||'알 수 없는 오류')}
@@ -2105,17 +2209,19 @@ async function shPull(){
   sh.pulling=true;
   try{
     var r=await tfetch(bust(shURL(b,'from-'+shOther()+'.json',true)),{headers:shHdr(b)});
-    var d={events:[],cycle:[]};
+    var d={events:[],cycle:[],diary:[]};
     if(r.status!==404){
       if(!r.ok)throw httpErr(r.status);
       var j=await r.json(),o=JSON.parse(b64dec(j.content));
       d.events=(Array.isArray(o.events)?o.events:[]).filter(function(e){return e&&e.date&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)});
       d.cycle=(Array.isArray(o.cycle)?o.cycle:[]).filter(function(x){return x&&/^\d{4}-\d{2}-\d{2}$/.test(x.s)});
+      d.diary=(Array.isArray(o.diary)?o.diary:[]).filter(function(x){return x&&/^\d{4}-\d{2}-\d{2}$/.test(x.date)});
     }
-    var was=stable(sh.cache.events)+stable(sh.cache.cycle),now2=stable(d.events)+stable(d.cycle);
-    sh.cache={events:d.events,cycle:d.cycle,at:Date.now()};sh.err='';
+    var was=stable(sh.cache.events)+stable(sh.cache.cycle)+stable(sh.cache.diary||[]),now2=stable(d.events)+stable(d.cycle)+stable(d.diary);
+    sh.cache={events:d.events,cycle:d.cycle,diary:d.diary,at:Date.now()};sh.err='';
     try{localStorage.setItem(SH_CACHE,JSON.stringify(sh.cache))}catch(e){}
     if(was!==now2){cyInv();render()}
+    if(await shPhotoDown(b,d.diary))render();
   }catch(e){
     sh.err=(e instanceof TypeError)?'인터넷에 연결할 수 없어요 (저장해 둔 내용을 보여 줘요)':((e&&e.message)||'불러오기 실패');
   }finally{sh.pulling=false;shRefreshUI()}
